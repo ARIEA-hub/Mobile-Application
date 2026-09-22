@@ -10,15 +10,25 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import com.example.alarmboss.util.StreakManager
 class AlarmViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val streakManager = StreakManager(application)
 
     private val repository = (application as AlarmBossApp).repository
     private val scheduler = AlarmScheduler(application)
 
+    private val _streak = MutableStateFlow(streakManager.getStreak())
+    val streak: StateFlow<Int> = _streak.asStateFlow()
     val alarms: StateFlow<List<Alarm>> = repository.observeAlarms()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+
+    fun loadStreak() {
+        _streak.value = streakManager.getStreak()
+    }
     fun save(alarm: Alarm) = viewModelScope.launch {
         val id = repository.save(alarm)
         val saved = alarm.copy(id = if (alarm.id == 0L) id else alarm.id)
