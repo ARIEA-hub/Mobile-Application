@@ -1,6 +1,7 @@
 package com.example.alarmboss.ui.ringing
 
 import android.Manifest
+import android.app.Activity
 import android.content.pm.PackageManager
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -20,6 +21,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.alarmboss.data.ExerciseType
 import com.google.mlkit.vision.common.InputImage
@@ -58,9 +60,16 @@ fun StrictExerciseScreen(
             ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         )
     }
+    var permanentlyDenied by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted -> hasPermission = granted }
+    ) { granted ->
+        hasPermission = granted
+        val activity = context as? Activity
+        if (!granted && activity != null) {
+            permanentlyDenied = !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
+        }
+    }
     LaunchedEffect(Unit) { if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA) }
 
     // Countdown only ticks down while the camera can see the person moving; this is what
@@ -97,7 +106,11 @@ fun StrictExerciseScreen(
             }
         } else {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("Camera permission is required for Strict mode.")
+                CameraPermissionRequired(
+                    message = "Camera permission is required for Strict mode.",
+                    permanentlyDenied = permanentlyDenied,
+                    onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) }
+                )
             }
         }
         Spacer(Modifier.height(12.dp))
