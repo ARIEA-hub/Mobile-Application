@@ -28,6 +28,7 @@ import com.example.alarmboss.ui.ringing.tasks.MazeTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.MemoryTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.ReadingTaskScreen
 import com.example.alarmboss.ui.theme.AlarmBossTheme
+import com.example.alarmboss.util.StreakManager
 
 /**
  * Full-screen activity shown over the lock screen when an alarm fires. This is the ONLY
@@ -78,6 +79,9 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 
     private fun dismissAlarm() {
+        // Reaching here means the alarm's task (if any) was actually completed, not just
+        // snoozed away -- that's what counts as a genuine wake-up for the streak.
+        StreakManager(this).recordSuccessfulWakeUp()
         AlarmService.stop(this)
         finish()
     }

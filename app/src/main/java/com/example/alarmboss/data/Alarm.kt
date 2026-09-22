@@ -34,11 +34,15 @@ data class Alarm @JvmOverloads constructor(
     val mentalExerciseType: MentalExerciseType = MentalExerciseType.MEMORY_GRID
 )
 
-fun isAlarmLocked(alarmHour: Int, alarmMinute: Int, isEnabled: Boolean): Boolean {
+fun isAlarmLocked(
+    alarmHour: Int,
+    alarmMinute: Int,
+    isEnabled: Boolean,
+    now: Calendar = Calendar.getInstance()
+): Boolean {
     if (!isEnabled) return false
 
-    val now = Calendar.getInstance()
-    val alarmTime = Calendar.getInstance().apply {
+    val alarmTime = (now.clone() as Calendar).apply {
         set(Calendar.HOUR_OF_DAY, alarmHour)
         set(Calendar.MINUTE, alarmMinute)
         set(Calendar.SECOND, 0)
