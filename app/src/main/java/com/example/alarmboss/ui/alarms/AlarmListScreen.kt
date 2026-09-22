@@ -1,5 +1,11 @@
 package com.example.alarmboss.ui.alarms
 
+import android.app.AlarmManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -15,8 +21,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.alarmboss.data.Alarm
 import com.example.alarmboss.data.AlarmMode
@@ -56,6 +66,8 @@ fun AlarmListScreen(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
 
+            ExactAlarmPermissionBanner()
+
             // Wake-Up Streak UI
             if (currentStreak > 0) {
                 val streakColor = if (isSystemInDarkTheme()) StreakFlameDark else StreakFlameLight
@@ -89,6 +101,60 @@ fun AlarmListScreen(
                         HorizontalDivider()
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * On Android 12+, exact-alarm scheduling can be revoked by the user (or the OS) after the
+ * app is installed. Without it, alarms silently fall back to inexact delivery, which can be
+ * off by many minutes -- unacceptable for an alarm clock -- so surface it instead of letting
+ * alarms quietly run late. Rechecked on resume since the grant happens in system Settings.
+ */
+@Composable
+private fun ExactAlarmPermissionBanner() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+    val context = LocalContext.current
+    val alarmManager = remember { context.getSystemService(Context.ALARM_SERVICE) as AlarmManager }
+
+    var canScheduleExact by remember { mutableStateOf(alarmManager.canScheduleExactAlarms()) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                canScheduleExact = alarmManager.canScheduleExactAlarms()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    if (!canScheduleExact) {
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(
+                    "Exact alarms are off",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Without this permission, Android may delay your alarms by several minutes.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+                Spacer(Modifier.height(8.dp))
+                TextButton(onClick = {
+                    val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                    }
+                    context.startActivity(intent)
+                }) { Text("Enable in Settings") }
             }
         }
     }

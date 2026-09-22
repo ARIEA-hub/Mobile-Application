@@ -10,6 +10,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 
 @Composable
 fun MazeTaskScreen(onSolved: () -> Unit) {
@@ -92,12 +94,24 @@ fun MazeTaskScreen(onSolved: () -> Unit) {
 
         // Directional Controls
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Button(onClick = { move(-1, 0) }) { Text("↑") }
+            Button(
+                onClick = { move(-1, 0) },
+                modifier = Modifier.semantics { contentDescription = "Move up" }
+            ) { Text("↑") }
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                Button(onClick = { move(0, -1) }) { Text("←") }
-                Button(onClick = { move(0, 1) }) { Text("→") }
+                Button(
+                    onClick = { move(0, -1) },
+                    modifier = Modifier.semantics { contentDescription = "Move left" }
+                ) { Text("←") }
+                Button(
+                    onClick = { move(0, 1) },
+                    modifier = Modifier.semantics { contentDescription = "Move right" }
+                ) { Text("→") }
             }
-            Button(onClick = { move(1, 0) }) { Text("↓") }
+            Button(
+                onClick = { move(1, 0) },
+                modifier = Modifier.semantics { contentDescription = "Move down" }
+            ) { Text("↓") }
         }
     }
 }
