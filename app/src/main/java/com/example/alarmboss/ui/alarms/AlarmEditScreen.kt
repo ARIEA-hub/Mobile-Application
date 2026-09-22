@@ -4,6 +4,8 @@ import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,15 +27,6 @@ fun AlarmEditScreen(
     viewModel: AlarmViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    var loaded by remember { mutableStateOf(alarmId == null) }
-
-    LaunchedEffect(alarmId) {
-        if (alarmId != null) {
-            // AlarmViewModel exposes a StateFlow of all alarms; find the matching one.
-        }
-        loaded = true
-    }
-
     val alarms by viewModel.alarms.collectAsState()
     val base = remember(alarms, alarmId) { alarms.find { it.id == alarmId } }
 
@@ -58,6 +51,11 @@ fun AlarmEditScreen(
         topBar = {
             TopAppBar(
                 title = { Text(if (base == null) "New alarm" else "Edit alarm") },
+                navigationIcon = {
+                    IconButton(onClick = onDone) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Cancel")
+                    }
+                },
                 actions = {
                     TextButton(onClick = {
                         viewModel.save(

@@ -2,6 +2,7 @@ package com.example.alarmboss.ui.alarms
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +24,8 @@ import com.example.alarmboss.data.ExerciseType
 import com.example.alarmboss.data.MentalExerciseType
 import com.example.alarmboss.data.StrictExerciseCategory
 import com.example.alarmboss.data.isAlarmLocked
+import com.example.alarmboss.ui.theme.StreakFlameDark
+import com.example.alarmboss.ui.theme.StreakFlameLight
 import com.example.alarmboss.util.formatTime12h
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -55,6 +58,7 @@ fun AlarmListScreen(
 
             // Wake-Up Streak UI
             if (currentStreak > 0) {
+                val streakColor = if (isSystemInDarkTheme()) StreakFlameDark else StreakFlameLight
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -64,7 +68,7 @@ fun AlarmListScreen(
                     Text(
                         text = "🔥 Current Streak: $currentStreak Days 🔥",
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFA500)
+                        color = streakColor
                     )
                 }
             }
@@ -98,11 +102,32 @@ private fun AlarmRow(
     onDelete: () -> Unit
 ) {
     val isLocked = isAlarmLocked(alarm.hour, alarm.minute, alarm.isEnabled)
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete alarm?") },
+            text = { Text("The ${formatTime12h(alarm.hour, alarm.minute)} alarm will be permanently removed.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            }
+        )
+    }
 
     Row(
         Modifier
             .fillMaxWidth()
-            .then(if (isLocked) Modifier.background(Color.LightGray.copy(alpha = 0.3f)) else Modifier)
+            .then(
+                if (isLocked) Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                else Modifier
+            )
             .clickable(enabled = !isLocked, onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -113,7 +138,7 @@ private fun AlarmRow(
             Text(
                 formatTime12h(alarm.hour, alarm.minute),
                 style = MaterialTheme.typography.headlineMedium,
-                color = if (isLocked) Color.Gray else Color.Unspecified
+                color = if (isLocked) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified
             )
             if (alarm.label.isNotBlank()) Text(alarm.label, style = MaterialTheme.typography.bodyMedium)
             Text(modeLabel(alarm), style = MaterialTheme.typography.bodySmall)
@@ -126,11 +151,13 @@ private fun AlarmRow(
             Icon(
                 imageVector = Icons.Default.Lock,
                 contentDescription = "Locked",
-                tint = Color.Red,
+                tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(12.dp)
             )
         } else {
-            IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
+            IconButton(onClick = { showDeleteConfirm = true }) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete")
+            }
         }
 
         Switch(
