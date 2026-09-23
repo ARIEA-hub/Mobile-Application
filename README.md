@@ -34,3 +34,4 @@ git push origin v1.0.0
 1. **Automation Trigger:** GitHub will immediately detect the new `v*` tag and spin up an isolated virtual environment to compile your code.
 2. **Track the Progress:** Navigate to your repository page on the GitHub website and click the **Actions** tab at the top. You will see a live workflow log showing your Gradle environment compiling the APK.
 3. **Download the App:** Once the build successfully completes, a brand new production **Release** will instantly appear on your GitHub dashboard. Your compiled `app-release.apk` file will be attached and ready for download onto any Android device!
+
