@@ -67,6 +67,7 @@ fun AlarmListScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
 
             ExactAlarmPermissionBanner()
+            BatteryOptimizationBanner()
 
             // Wake-Up Streak UI
             if (currentStreak > 0) {
