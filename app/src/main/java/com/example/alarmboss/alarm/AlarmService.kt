@@ -67,8 +67,8 @@ class AlarmService : Service() {
 
             val notification: Notification = NotificationCompat.Builder(this@AlarmService, AlarmBossApp.CHANNEL_ALARM)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle(alarm.label.ifBlank { "Alarm" })
-                .setContentText("Tap to open")
+                .setContentTitle(alarm.label.ifBlank { getString(R.string.ringing_default_label) })
+                .setContentText(getString(R.string.notification_tap_to_open))
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setFullScreenIntent(fullScreenPendingIntent, true)

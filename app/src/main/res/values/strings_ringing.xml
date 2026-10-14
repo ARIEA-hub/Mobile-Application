@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ringing screen -->
+    <plurals name="ringing_streak">
+        <item quantity="one">Current streak: %1$d day</item>
+        <item quantity="other">Current streak: %1$d days</item>
+    </plurals>
+    <string name="ringing_default_label">Alarm</string>
+    <string name="ringing_dismiss">Dismiss</string>
+    <string name="ringing_snooze">Snooze %1$d min</string>
+
+    <!-- Notification shown while an alarm rings, and its channel -->
+    <string name="notification_tap_to_open">Tap to open</string>
+    <string name="notification_channel_name">Alarms</string>
+    <string name="notification_channel_description">Alarm ringing notifications</string>
+</resources>

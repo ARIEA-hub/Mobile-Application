@@ -35,10 +35,10 @@ class AlarmBossApp : Application() {
         val nm = getSystemService(NotificationManager::class.java)
         val alarmChannel = NotificationChannel(
             CHANNEL_ALARM,
-            "Alarms",
+            getString(R.string.notification_channel_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = "Alarm ringing notifications"
+            description = getString(R.string.notification_channel_description)
             setBypassDnd(true)
             enableVibration(true)
         }

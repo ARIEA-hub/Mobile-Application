@@ -38,6 +38,9 @@ import com.example.alarmboss.ui.ringing.tasks.PatternLockTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.ReadingTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.WordScrambleTaskScreen
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.example.alarmboss.R
 import com.example.alarmboss.ui.theme.AlarmBossTheme
 import com.example.alarmboss.util.SnoozeSettings
 import com.example.alarmboss.util.StreakManager
@@ -210,7 +213,10 @@ private fun RingingContent(alarm: Alarm, plan: RingPlan, onDismiss: () -> Unit, 
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = "Current streak: $streak day${if (streak != 1) "s" else ""}", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = pluralStringResource(R.plurals.ringing_streak, streak, streak),
+            style = MaterialTheme.typography.titleMedium
+        )
         Spacer(modifier = Modifier.height(8.dp))
         when (alarm.mode) {
             AlarmMode.EASY -> EasyDismissScreen(
@@ -255,10 +261,13 @@ private fun EasyDismissScreen(alarm: Alarm, snoozeMinutes: Int, onDismiss: () ->
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(alarm.label.ifBlank { "Alarm" }, style = MaterialTheme.typography.headlineMedium)
+        Text(
+            alarm.label.ifBlank { stringResource(R.string.ringing_default_label) },
+            style = MaterialTheme.typography.headlineMedium
+        )
         Spacer(Modifier.height(32.dp))
-        Button(onClick = onDismiss) { Text("Dismiss") }
+        Button(onClick = onDismiss) { Text(stringResource(R.string.ringing_dismiss)) }
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(onClick = onSnooze) { Text("Snooze $snoozeMinutes min") }
+        OutlinedButton(onClick = onSnooze) { Text(stringResource(R.string.ringing_snooze, snoozeMinutes)) }
     }
 }
