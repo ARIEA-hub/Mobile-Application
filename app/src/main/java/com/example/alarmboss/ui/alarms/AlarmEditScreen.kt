@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
@@ -37,24 +38,27 @@ fun AlarmEditScreen(
     val alarms by viewModel.alarms.collectAsState()
     val base = remember(alarms, alarmId) { alarms.find { it.id == alarmId } }
 
-    var hour by remember(base) { mutableIntStateOf(base?.hour ?: 7) }
-    var minute by remember(base) { mutableIntStateOf(base?.minute ?: 0) }
-    var label by remember(base) { mutableStateOf(base?.label ?: "") }
-    var mode by remember(base) { mutableStateOf(base?.mode ?: AlarmMode.EASY) }
-    var days by remember(base) { mutableStateOf(base?.repeatDays ?: emptySet()) }
-    var soundUri by remember(base) { mutableStateOf(base?.soundUri) }
-    var vibrate by remember(base) { mutableStateOf(base?.vibrate ?: true) }
-    var enabledTasks by remember(base) { mutableStateOf(base?.enabledMediumTasks ?: MediumTaskType.values().toSet()) }
-    var exerciseType by remember(base) { mutableStateOf(base?.exerciseType ?: ExerciseType.SQUATS) }
-    var exerciseSeconds by remember(base) { mutableFloatStateOf((base?.exerciseDurationSeconds ?: 300).toFloat()) }
+    // Form state survives rotation (rememberSaveable) and still resets when the saved alarm
+    // loads or changes (keyed on base). Plain mutableStateOf, not the primitive variants, so
+    // every value is something Compose can put in the saved-state bundle.
+    var hour by rememberSaveable(base) { mutableStateOf(base?.hour ?: 7) }
+    var minute by rememberSaveable(base) { mutableStateOf(base?.minute ?: 0) }
+    var label by rememberSaveable(base) { mutableStateOf(base?.label ?: "") }
+    var mode by rememberSaveable(base) { mutableStateOf(base?.mode ?: AlarmMode.EASY) }
+    var days by rememberSaveable(base) { mutableStateOf(base?.repeatDays ?: emptySet()) }
+    var soundUri by rememberSaveable(base) { mutableStateOf(base?.soundUri) }
+    var vibrate by rememberSaveable(base) { mutableStateOf(base?.vibrate ?: true) }
+    var enabledTasks by rememberSaveable(base) { mutableStateOf(base?.enabledMediumTasks ?: MediumTaskType.values().toSet()) }
+    var exerciseType by rememberSaveable(base) { mutableStateOf(base?.exerciseType ?: ExerciseType.SQUATS) }
+    var exerciseSeconds by rememberSaveable(base) { mutableStateOf((base?.exerciseDurationSeconds ?: 300).toFloat()) }
 
     // Strict category state variables
-    var strictCategory by remember(base) { mutableStateOf(base?.strictCategory ?: StrictExerciseCategory.PHYSICAL) }
-    var mentalExerciseType by remember(base) { mutableStateOf(base?.mentalExerciseType ?: MentalExerciseType.MEMORY_GRID) }
+    var strictCategory by rememberSaveable(base) { mutableStateOf(base?.strictCategory ?: StrictExerciseCategory.PHYSICAL) }
+    var mentalExerciseType by rememberSaveable(base) { mutableStateOf(base?.mentalExerciseType ?: MentalExerciseType.MEMORY_GRID) }
 
     val soundPicker = rememberSoundPickerLauncher { uri -> soundUri = uri }
 
-    var showCameraWarning by remember { mutableStateOf(false) }
+    var showCameraWarning by rememberSaveable { mutableStateOf(false) }
 
     fun saveAlarm() {
         viewModel.save(
