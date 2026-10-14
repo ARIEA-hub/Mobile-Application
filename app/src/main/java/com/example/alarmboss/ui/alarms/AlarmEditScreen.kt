@@ -27,20 +27,44 @@ import com.example.alarmboss.util.formatTime12h
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Loads the alarm being edited before showing any form. The form used to appear at once with
+ * defaults and fill in when the alarm arrived, so for a moment an existing alarm looked like a
+ * blank "New alarm", and saving in that window would have created a duplicate.
+ */
 @Composable
 fun AlarmEditScreen(
     alarmId: Long?,
     onDone: () -> Unit,
     viewModel: AlarmViewModel = viewModel()
 ) {
-    val context = LocalContext.current
-    val alarms by viewModel.alarms.collectAsState()
-    val base = remember(alarms, alarmId) { alarms.find { it.id == alarmId } }
+    if (alarmId == null) {
+        AlarmEditForm(base = null, onDone = onDone, viewModel = viewModel)
+        return
+    }
 
-    // Form state survives rotation (rememberSaveable) and still resets when the saved alarm
-    // loads or changes (keyed on base). Plain mutableStateOf, not the primitive variants, so
-    // every value is something Compose can put in the saved-state bundle.
+    LaunchedEffect(alarmId) { viewModel.loadForEdit(alarmId) }
+    when (val target = viewModel.editTarget.collectAsState().value) {
+        EditTarget.Loading ->
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        // The alarm was deleted out from under us: nothing to edit.
+        EditTarget.Missing -> LaunchedEffect(Unit) { onDone() }
+        is EditTarget.Existing -> AlarmEditForm(base = target.alarm, onDone = onDone, viewModel = viewModel)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AlarmEditForm(
+    base: Alarm?,
+    onDone: () -> Unit,
+    viewModel: AlarmViewModel
+) {
+    val context = LocalContext.current
+
+    // Form state survives rotation (rememberSaveable) and is keyed on the alarm being edited.
+    // Plain mutableStateOf, not the primitive variants, so every value is something Compose can
+    // put in the saved-state bundle.
     var hour by rememberSaveable(base) { mutableStateOf(base?.hour ?: 7) }
     var minute by rememberSaveable(base) { mutableStateOf(base?.minute ?: 0) }
     var label by rememberSaveable(base) { mutableStateOf(base?.label ?: "") }
