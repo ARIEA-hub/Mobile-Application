@@ -14,7 +14,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 
 @Composable
-fun MazeTaskScreen(onSolved: () -> Unit) {
+fun MazeTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
     // 0 = path, 1 = wall, 2 = start, 3 = exit
     val maze = remember {
         arrayOf(

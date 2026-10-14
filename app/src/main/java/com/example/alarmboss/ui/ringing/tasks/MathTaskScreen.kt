@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlin.math.max
 import kotlin.random.Random
 import androidx.compose.foundation.text.KeyboardOptions
 
@@ -31,7 +32,7 @@ private fun randomProblem(): Problem {
 
 /** Requires solving 3 problems in a row correctly to dismiss the alarm. */
 @Composable
-fun MathTaskScreen(onSolved: () -> Unit) {
+fun MathTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
     var solvedCount by remember { mutableIntStateOf(0) }
     var problem by remember { mutableStateOf(randomProblem()) }
     var input by remember { mutableStateOf("") }
