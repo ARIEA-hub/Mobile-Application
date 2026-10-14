@@ -1,5 +1,6 @@
 package com.example.alarmboss.ui.settings
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.alarmboss.data.ContentStore
+import com.example.alarmboss.util.SnoozeSettings
 import kotlinx.coroutines.launch
 
 /**
@@ -37,7 +39,10 @@ fun SettingsScreen() {
         store.barcodeTarget.collect { barcodeTarget = it ?: "" }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Task content") }) }) { padding ->
+    val snoozeSettings = remember { SnoozeSettings(context) }
+    var snoozeMinutes by remember { mutableIntStateOf(snoozeSettings.minutes) }
+
+    Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
@@ -46,6 +51,31 @@ fun SettingsScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Text("Snooze length", style = MaterialTheme.typography.titleSmall)
+            Text(
+                "How long an Easy-mode alarm waits after you tap Snooze. Medium and Strict " +
+                    "alarms can't be snoozed.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SnoozeSettings.OPTIONS.forEach { option ->
+                    FilterChip(
+                        selected = snoozeMinutes == option,
+                        onClick = {
+                            snoozeMinutes = option
+                            snoozeSettings.minutes = option
+                        },
+                        label = { Text("$option min") }
+                    )
+                }
+            }
+
+            HorizontalDivider()
+
+            Text("Task content", style = MaterialTheme.typography.titleMedium)
             Text(
                 "Add your own content below so Medium-mode tasks quiz you on things you " +
                     "chose (we don't ship any copyrighted text or lyrics).",

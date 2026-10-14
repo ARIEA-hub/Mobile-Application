@@ -39,6 +39,7 @@ import com.example.alarmboss.ui.ringing.tasks.ReadingTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.WordScrambleTaskScreen
 import androidx.compose.ui.platform.LocalContext
 import com.example.alarmboss.ui.theme.AlarmBossTheme
+import com.example.alarmboss.util.SnoozeSettings
 import com.example.alarmboss.util.StreakManager
 import java.time.LocalDate
 import kotlinx.coroutines.launch
@@ -161,10 +162,10 @@ class AlarmRingingActivity : ComponentActivity() {
         app.appScope.launch { app.profileRepository.recordWakeUp(event, outcome.profile) }
     }
 
-    /** Only offered in Easy mode: stops the current ring and re-fires the alarm in 5 minutes. */
+    /** Only offered in Easy mode: stops the current ring and re-fires the alarm after the chosen snooze length. */
     private fun snoozeAlarm() {
         viewModel.alarm.value?.let { alarm ->
-            AlarmScheduler(this).scheduleOneOffInMinutes(alarm, 5)
+            AlarmScheduler(this).scheduleOneOffInMinutes(alarm, SnoozeSettings(this).minutes)
         }
         AlarmService.stop(this)
         finish()
@@ -212,7 +213,12 @@ private fun RingingContent(alarm: Alarm, plan: RingPlan, onDismiss: () -> Unit, 
         Text(text = "Current streak: $streak day${if (streak != 1) "s" else ""}", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         when (alarm.mode) {
-            AlarmMode.EASY -> EasyDismissScreen(alarm, onDismiss, onSnooze)
+            AlarmMode.EASY -> EasyDismissScreen(
+                alarm = alarm,
+                snoozeMinutes = remember { SnoozeSettings(context).minutes },
+                onDismiss = onDismiss,
+                onSnooze = onSnooze
+            )
             AlarmMode.MEDIUM -> {
                 val task = remember(alarm.id) { alarm.enabledMediumTasks.randomOrNull() ?: MediumTaskType.MATH }
                 when (task) {
@@ -243,7 +249,7 @@ private fun RingingContent(alarm: Alarm, plan: RingPlan, onDismiss: () -> Unit, 
 }
 
 @Composable
-private fun EasyDismissScreen(alarm: Alarm, onDismiss: () -> Unit, onSnooze: () -> Unit) {
+private fun EasyDismissScreen(alarm: Alarm, snoozeMinutes: Int, onDismiss: () -> Unit, onSnooze: () -> Unit) {
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
@@ -253,6 +259,6 @@ private fun EasyDismissScreen(alarm: Alarm, onDismiss: () -> Unit, onSnooze: () 
         Spacer(Modifier.height(32.dp))
         Button(onClick = onDismiss) { Text("Dismiss") }
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(onClick = onSnooze) { Text("Snooze 5 min") }
+        OutlinedButton(onClick = onSnooze) { Text("Snooze $snoozeMinutes min") }
     }
 }
