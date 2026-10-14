@@ -27,6 +27,7 @@ import com.example.alarmboss.ui.ringing.tasks.MathTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.MazeTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.MemoryTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.ReadingTaskScreen
+import androidx.compose.ui.platform.LocalContext
 import com.example.alarmboss.ui.theme.AlarmBossTheme
 import com.example.alarmboss.util.StreakManager
 
@@ -103,29 +104,41 @@ private fun LoadingContent() {
 
 @Composable
 private fun RingingContent(alarm: Alarm, onDismiss: () -> Unit, onSnooze: () -> Unit) {
-    when (alarm.mode) {
-        AlarmMode.EASY -> EasyDismissScreen(alarm, onDismiss, onSnooze)
-        AlarmMode.MEDIUM -> {
-            val task = remember(alarm.id) { alarm.enabledMediumTasks.randomOrNull() ?: MediumTaskType.MATH }
-            when (task) {
-                MediumTaskType.MATH -> MathTaskScreen(onSolved = onDismiss)
-                MediumTaskType.READING -> ReadingTaskScreen(onDone = onDismiss)
-                MediumTaskType.LYRICS -> LyricsTaskScreen(onDone = onDismiss)
-                MediumTaskType.BARCODE -> BarcodeTaskScreen(onScanned = onDismiss)
-            }
-        }
-        AlarmMode.STRICT -> {
-            if (alarm.strictCategory == StrictExerciseCategory.MENTAL) {
-                when (alarm.mentalExerciseType) {
-                    MentalExerciseType.MEMORY_GRID -> MemoryTaskScreen(onSolved = onDismiss)
-                    MentalExerciseType.MAZE -> MazeTaskScreen(onSolved = onDismiss)
+    val context = LocalContext.current
+    val streakManager = remember { StreakManager(context) }
+    val streak = remember { streakManager.getCurrentStreak() }
+
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = "Current streak: $streak day${if (streak != 1) "s" else ""}", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        when (alarm.mode) {
+            AlarmMode.EASY -> EasyDismissScreen(alarm, onDismiss, onSnooze)
+            AlarmMode.MEDIUM -> {
+                val task = remember(alarm.id) { alarm.enabledMediumTasks.randomOrNull() ?: MediumTaskType.MATH }
+                when (task) {
+                    MediumTaskType.MATH -> MathTaskScreen(onSolved = onDismiss)
+                    MediumTaskType.READING -> ReadingTaskScreen(onDone = onDismiss)
+                    MediumTaskType.LYRICS -> LyricsTaskScreen(onDone = onDismiss)
+                    MediumTaskType.BARCODE -> BarcodeTaskScreen(onScanned = onDismiss)
                 }
-            } else {
-                StrictExerciseScreen(
-                    initialExercise = alarm.exerciseType,
-                    durationSeconds = alarm.exerciseDurationSeconds,
-                    onComplete = onDismiss
-                )
+            }
+            AlarmMode.STRICT -> {
+                if (alarm.strictCategory == StrictExerciseCategory.MENTAL) {
+                    when (alarm.mentalExerciseType) {
+                        MentalExerciseType.MEMORY_GRID -> MemoryTaskScreen(onSolved = onDismiss)
+                        MentalExerciseType.MAZE -> MazeTaskScreen(onSolved = onDismiss)
+                    }
+                } else {
+                    StrictExerciseScreen(
+                        initialExercise = alarm.exerciseType,
+                        durationSeconds = alarm.exerciseDurationSeconds,
+                        onComplete = onDismiss
+                    )
+                }
             }
         }
     }
