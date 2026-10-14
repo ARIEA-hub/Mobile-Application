@@ -18,8 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.alarmboss.R
-import com.example.alarmboss.data.ContentStore
 import com.example.alarmboss.util.wordOverlapPercent
 import java.util.Locale
 
@@ -32,8 +32,8 @@ import java.util.Locale
 @Composable
 fun ReadingTaskScreen(onDone: () -> Unit) {
     val context = LocalContext.current
-    val store = remember { ContentStore(context) }
-    var passage by remember { mutableStateOf<String?>(null) }
+    val contentViewModel: TaskContentViewModel = viewModel()
+    val passage by contentViewModel.passage.collectAsState()
     val scrollState = rememberScrollState()
     var heard by remember { mutableStateOf("") }
     var typed by remember { mutableStateOf("") }
@@ -42,7 +42,7 @@ fun ReadingTaskScreen(onDone: () -> Unit) {
     var recognitionError by remember { mutableStateOf<String?>(null) }
     val recognitionAvailable = remember { SpeechRecognizer.isRecognitionAvailable(context) }
 
-    LaunchedEffect(Unit) { passage = store.getRandomPassage() }
+    LaunchedEffect(Unit) { contentViewModel.loadPassage() }
 
     // Only the closing sentence needs to be read aloud -- speech recognition sessions are
     // short-lived, so checking the whole passage isn't reliable, but the last sentence is

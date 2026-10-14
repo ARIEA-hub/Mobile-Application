@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.alarmboss.R
-import com.example.alarmboss.data.ContentStore
 import com.example.alarmboss.util.wordOverlapPercent
 import java.util.Locale
 
@@ -34,15 +34,16 @@ import java.util.Locale
 @Composable
 fun LyricsTaskScreen(onDone: () -> Unit) {
     val context = LocalContext.current
-    val store = remember { ContentStore(context) }
-    var line by remember { mutableStateOf<String?>(null) }
+    val contentViewModel: TaskContentViewModel = viewModel()
+    val lyricState by contentViewModel.lyric.collectAsState()
+    val line = (lyricState as? LyricState.Line)?.text
     var heard by remember { mutableStateOf("") }
     var typed by remember { mutableStateOf("") }
     var listening by remember { mutableStateOf(false) }
     var recognitionError by remember { mutableStateOf<String?>(null) }
     val recognitionAvailable = remember { SpeechRecognizer.isRecognitionAvailable(context) }
 
-    LaunchedEffect(Unit) { line = store.getRandomLyric() }
+    LaunchedEffect(Unit) { contentViewModel.loadLyric() }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -83,7 +84,10 @@ fun LyricsTaskScreen(onDone: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (line == null) {
+        if (lyricState is LyricState.Loading) {
+            // Don't offer the "no lyrics, continue" skip while the line is still being fetched.
+            CircularProgressIndicator()
+        } else if (line == null) {
             Text(
                 stringResource(R.string.lyrics_none),
                 style = MaterialTheme.typography.bodyMedium
