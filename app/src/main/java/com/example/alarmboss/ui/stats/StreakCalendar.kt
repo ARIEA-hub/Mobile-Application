@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alarmboss.R
 import java.time.LocalDate
 
 @Composable
@@ -21,7 +23,7 @@ fun StreakCalendar(wakeDates: Set<LocalDate>, modifier: Modifier = Modifier) {
     val startDate = today.minusDays(daysToShow.toLong() - 1)
 
     Column(modifier = modifier) {
-        Text("Past 4 Weeks", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.stats_past_four_weeks), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

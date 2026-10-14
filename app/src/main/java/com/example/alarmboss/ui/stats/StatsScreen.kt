@@ -8,7 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alarmboss.R
 
 @Composable
 fun StatsScreen(viewModel: StatsViewModel) {
@@ -33,44 +36,48 @@ fun StatsScreen(viewModel: StatsViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text("Your Arena Profile", style = MaterialTheme.typography.displayMedium)
-        
+        Text(stringResource(R.string.stats_title), style = MaterialTheme.typography.displayMedium)
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Level $currentLevel", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.stats_level, currentLevel), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(8.dp))
                 LinearProgressIndicator(
                     progress = { progress.coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth().height(8.dp)
                 )
                 Spacer(Modifier.height(8.dp))
-                Text("$totalXp / $nextLevelXp XP", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.stats_xp_progress, totalXp, nextLevelXp), style = MaterialTheme.typography.bodySmall)
             }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Card(modifier = Modifier.weight(1f)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Current Streak", style = MaterialTheme.typography.titleMedium)
-                    Text("${profile.currentStreak} 🔥", style = MaterialTheme.typography.headlineMedium)
+                    Text(stringResource(R.string.stats_current_streak), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.stats_streak_value, profile.currentStreak), style = MaterialTheme.typography.headlineMedium)
                 }
             }
             Card(modifier = Modifier.weight(1f)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Bosses Defeated", style = MaterialTheme.typography.titleMedium)
-                    Text("${profile.bossesDefeated} 💀", style = MaterialTheme.typography.headlineMedium)
+                    Text(stringResource(R.string.stats_bosses_defeated), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.stats_bosses_value, profile.bossesDefeated), style = MaterialTheme.typography.headlineMedium)
                 }
             }
         }
         
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Records", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.stats_records), style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
-                Text("Longest Streak: ${profile.longestStreak} days")
-                Text("Total Wake-Ups: ${profile.totalWakeUps}")
-                val avgReaction = if (profile.averageReactionMs > 0) "${profile.averageReactionMs / 1000}s" else "N/A"
-                Text("Avg Reaction Time: $avgReaction")
+                Text(pluralStringResource(R.plurals.stats_longest_streak, profile.longestStreak, profile.longestStreak))
+                Text(stringResource(R.string.stats_total_wake_ups, profile.totalWakeUps))
+                val avgReaction = if (profile.averageReactionMs > 0) {
+                    stringResource(R.string.stats_seconds, profile.averageReactionMs / 1000)
+                } else {
+                    stringResource(R.string.stats_not_available)
+                }
+                Text(stringResource(R.string.stats_avg_reaction, avgReaction))
             }
         }
 

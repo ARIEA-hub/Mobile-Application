@@ -18,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -84,26 +85,26 @@ private fun AlarmBossRoot() {
                 NavigationBarItem(
                     selected = currentDestination?.hierarchy?.any { it.route == Routes.ALARMS } == true,
                     onClick = { navController.navigate(Routes.ALARMS) { popUpTo(navController.graph.findStartDestination().id) } },
-                    icon = { Icon(Icons.Default.Alarm, contentDescription = "Alarms") },
-                    label = { Text("Alarms") }
+                    icon = { Icon(Icons.Default.Alarm, contentDescription = stringResource(R.string.nav_alarms)) },
+                    label = { Text(stringResource(R.string.nav_alarms)) }
                 )
                 NavigationBarItem(
                     selected = currentDestination?.hierarchy?.any { it.route == Routes.STATS } == true,
                     onClick = { navController.navigate(Routes.STATS) { popUpTo(navController.graph.findStartDestination().id) } },
-                    icon = { Icon(Icons.Default.EmojiEvents, contentDescription = "Stats") },
-                    label = { Text("Stats") }
+                    icon = { Icon(Icons.Default.EmojiEvents, contentDescription = stringResource(R.string.nav_stats)) },
+                    label = { Text(stringResource(R.string.nav_stats)) }
                 )
                 NavigationBarItem(
                     selected = currentDestination?.hierarchy?.any { it.route == Routes.STOPWATCH } == true,
                     onClick = { navController.navigate(Routes.STOPWATCH) { popUpTo(navController.graph.findStartDestination().id) } },
-                    icon = { Icon(Icons.Default.Timer, contentDescription = "Stopwatch") },
-                    label = { Text("Stopwatch") }
+                    icon = { Icon(Icons.Default.Timer, contentDescription = stringResource(R.string.nav_stopwatch)) },
+                    label = { Text(stringResource(R.string.nav_stopwatch)) }
                 )
                 NavigationBarItem(
                     selected = currentDestination?.hierarchy?.any { it.route == Routes.SETTINGS } == true,
                     onClick = { navController.navigate(Routes.SETTINGS) { popUpTo(navController.graph.findStartDestination().id) } },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-                    label = { Text("Settings") }
+                    icon = { Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.nav_settings)) },
+                    label = { Text(stringResource(R.string.nav_settings)) }
                 )
             }
         }
