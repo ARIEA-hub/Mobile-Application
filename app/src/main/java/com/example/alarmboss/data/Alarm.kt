@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 import java.util.Calendar
 enum class AlarmMode { EASY, MEDIUM, STRICT }
 
-enum class MediumTaskType { MATH, READING, LYRICS, BARCODE }
+enum class MediumTaskType { MATH, READING, LYRICS, BARCODE, PATTERN_LOCK, WORD_SCRAMBLE }
 
 // Add these enums for Strict Mode categorization
 enum class StrictExerciseCategory { PHYSICAL, MENTAL }

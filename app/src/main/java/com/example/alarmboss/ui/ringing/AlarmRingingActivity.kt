@@ -34,7 +34,9 @@ import com.example.alarmboss.ui.ringing.tasks.LyricsTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.MathTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.MazeTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.MemoryTaskScreen
+import com.example.alarmboss.ui.ringing.tasks.PatternLockTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.ReadingTaskScreen
+import com.example.alarmboss.ui.ringing.tasks.WordScrambleTaskScreen
 import androidx.compose.ui.platform.LocalContext
 import com.example.alarmboss.ui.theme.AlarmBossTheme
 import com.example.alarmboss.util.StreakManager
@@ -218,6 +220,8 @@ private fun RingingContent(alarm: Alarm, plan: RingPlan, onDismiss: () -> Unit, 
                     MediumTaskType.READING -> ReadingTaskScreen(onDone = onDismiss)
                     MediumTaskType.LYRICS -> LyricsTaskScreen(onDone = onDismiss)
                     MediumTaskType.BARCODE -> BarcodeTaskScreen(onScanned = onDismiss)
+                    MediumTaskType.PATTERN_LOCK -> PatternLockTaskScreen(difficulty = plan.difficulty, onSolved = onDismiss)
+                    MediumTaskType.WORD_SCRAMBLE -> WordScrambleTaskScreen(difficulty = plan.difficulty, onSolved = onDismiss)
                 }
             }
             AlarmMode.STRICT -> {

@@ -181,6 +181,8 @@ private fun taskLabel(task: MediumTaskType) = when (task) {
     MediumTaskType.READING -> "Read a passage"
     MediumTaskType.LYRICS -> "Sing along to lyrics"
     MediumTaskType.BARCODE -> "Scan a barcode"
+    MediumTaskType.PATTERN_LOCK -> "Memorize a pattern"
+    MediumTaskType.WORD_SCRAMBLE -> "Unscramble words"
 }
 
 @Composable
