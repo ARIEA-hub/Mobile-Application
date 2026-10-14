@@ -1,6 +1,10 @@
 package com.example.alarmboss.ui.alarms
 
+import android.Manifest
 import android.app.TimePickerDialog
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -12,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.alarmboss.data.*
 import com.example.alarmboss.util.formatTime12h
@@ -47,6 +52,61 @@ fun AlarmEditScreen(
 
     val soundPicker = rememberSoundPickerLauncher { uri -> soundUri = uri }
 
+    var showCameraWarning by remember { mutableStateOf(false) }
+
+    fun saveAlarm() {
+        viewModel.save(
+            Alarm(
+                id = base?.id ?: 0L,
+                hour = hour, minute = minute, label = label,
+                isEnabled = base?.isEnabled ?: true,
+                repeatDays = days, mode = mode, soundUri = soundUri,
+                vibrate = vibrate, enabledMediumTasks = enabledTasks,
+                exerciseDurationSeconds = exerciseSeconds.toInt(),
+                exerciseType = exerciseType,
+                strictCategory = strictCategory,
+                mentalExerciseType = mentalExerciseType
+            )
+        )
+        onDone()
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        // Only a denied camera is worth stopping for: the microphone tasks accept typing instead.
+        if (results[Manifest.permission.CAMERA] == false) showCameraWarning = true else saveAlarm()
+    }
+
+    fun onSaveClicked() {
+        val missing = requiredPermissions(mode, strictCategory, enabledTasks).filter {
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missing.isEmpty()) saveAlarm() else permissionLauncher.launch(missing.toTypedArray())
+    }
+
+    if (showCameraWarning) {
+        AlertDialog(
+            onDismissRequest = { showCameraWarning = false },
+            title = { Text("Camera access needed") },
+            text = {
+                Text(
+                    "This alarm's challenge uses the camera. Without it you'll be asked again " +
+                        "when the alarm rings, and may have to open Settings before you can dismiss it."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showCameraWarning = false
+                    saveAlarm()
+                }) { Text("Save anyway") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCameraWarning = false }) { Text("Keep editing") }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -57,22 +117,7 @@ fun AlarmEditScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = {
-                        viewModel.save(
-                            Alarm(
-                                id = base?.id ?: 0L,
-                                hour = hour, minute = minute, label = label,
-                                isEnabled = base?.isEnabled ?: true,
-                                repeatDays = days, mode = mode, soundUri = soundUri,
-                                vibrate = vibrate, enabledMediumTasks = enabledTasks,
-                                exerciseDurationSeconds = exerciseSeconds.toInt(),
-                                exerciseType = exerciseType,
-                                strictCategory = strictCategory,
-                                mentalExerciseType = mentalExerciseType
-                            )
-                        )
-                        onDone()
-                    }) { Text("Save") }
+                    TextButton(onClick = ::onSaveClicked) { Text("Save") }
                 }
             )
         }
