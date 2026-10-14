@@ -8,7 +8,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alarmboss.R
 import com.example.alarmboss.data.ContentStore
 import com.example.alarmboss.util.SnoozeSettings
 import kotlinx.coroutines.launch
@@ -42,7 +44,7 @@ fun SettingsScreen() {
     val snoozeSettings = remember { SnoozeSettings(context) }
     var snoozeMinutes by remember { mutableIntStateOf(snoozeSettings.minutes) }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Settings") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_settings)) }) }) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
@@ -51,10 +53,9 @@ fun SettingsScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("Snooze length", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_snooze_title), style = MaterialTheme.typography.titleSmall)
             Text(
-                "How long an Easy-mode alarm waits after you tap Snooze. Medium and Strict " +
-                    "alarms can't be snoozed.",
+                stringResource(R.string.settings_snooze_body),
                 style = MaterialTheme.typography.bodySmall
             )
             Row(
@@ -68,47 +69,44 @@ fun SettingsScreen() {
                             snoozeMinutes = option
                             snoozeSettings.minutes = option
                         },
-                        label = { Text("$option min") }
+                        label = { Text(stringResource(R.string.settings_snooze_option, option)) }
                     )
                 }
             }
 
             HorizontalDivider()
 
-            Text("Task content", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_content_title), style = MaterialTheme.typography.titleMedium)
             Text(
-                "Add your own content below so Medium-mode tasks quiz you on things you " +
-                    "chose (we don't ship any copyrighted text or lyrics).",
+                stringResource(R.string.settings_content_body),
                 style = MaterialTheme.typography.bodySmall
             )
 
-            Text("Reading passages (separate with a line containing ---)", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_passages_title), style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(
                 value = passagesText, onValueChange = { passagesText = it },
                 modifier = Modifier.fillMaxWidth().height(140.dp)
             )
             Button(onClick = {
                 scope.launch { store.setReadingPassages(passagesText.split("---").map { it.trim() }.filter { it.isNotBlank() }) }
-            }) { Text("Save passages") }
+            }) { Text(stringResource(R.string.settings_save_passages)) }
 
-            Text("Lyric lines (one per line)", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_lyrics_title), style = MaterialTheme.typography.titleSmall)
             OutlinedTextField(
                 value = lyricsText, onValueChange = { lyricsText = it },
                 modifier = Modifier.fillMaxWidth().height(140.dp)
             )
             Button(onClick = {
                 scope.launch { store.setLyricLines(lyricsText.split("\n").map { it.trim() }.filter { it.isNotBlank() }) }
-            }) { Text("Save lyrics") }
+            }) { Text(stringResource(R.string.settings_save_lyrics)) }
 
-            Text("Barcode task target value", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.settings_barcode_title), style = MaterialTheme.typography.titleSmall)
             Text(
-                "Scan a barcode/QR code with any scanner app to get its text value, or just " +
-                    "type something unique and print/write it as a QR code to stick somewhere " +
-                    "you must get up to reach.",
+                stringResource(R.string.settings_barcode_body),
                 style = MaterialTheme.typography.bodySmall
             )
             OutlinedTextField(value = barcodeTarget, onValueChange = { barcodeTarget = it }, modifier = Modifier.fillMaxWidth())
-            Button(onClick = { scope.launch { store.setBarcodeTarget(barcodeTarget) } }) { Text("Save barcode target") }
+            Button(onClick = { scope.launch { store.setBarcodeTarget(barcodeTarget) } }) { Text(stringResource(R.string.settings_save_barcode)) }
         }
     }
 }

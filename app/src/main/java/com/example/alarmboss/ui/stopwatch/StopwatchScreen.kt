@@ -10,8 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.alarmboss.R
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -31,7 +33,7 @@ fun StopwatchScreen() {
         }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Stopwatch") }) }) { padding ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_stopwatch)) }) }) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -39,15 +41,20 @@ fun StopwatchScreen() {
             Text(formatMillis(state.elapsed(now)), style = MaterialTheme.typography.displayMedium)
             Spacer(Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(onClick = viewModel::toggle) { Text(if (state.running) "Pause" else "Start") }
-                OutlinedButton(onClick = viewModel::lap) { Text("Lap") }
-                OutlinedButton(onClick = viewModel::reset) { Text("Reset") }
+                Button(onClick = viewModel::toggle) {
+                    Text(stringResource(if (state.running) R.string.stopwatch_pause else R.string.stopwatch_start))
+                }
+                OutlinedButton(onClick = viewModel::lap) { Text(stringResource(R.string.stopwatch_lap)) }
+                OutlinedButton(onClick = viewModel::reset) { Text(stringResource(R.string.stopwatch_reset)) }
             }
             Spacer(Modifier.height(16.dp))
             LazyColumn(Modifier.fillMaxWidth()) {
                 items(viewModel.laps.size) { index ->
                     val lapNumber = viewModel.laps.size - index
-                    Text("Lap $lapNumber: ${formatMillis(viewModel.laps[index])}", modifier = Modifier.padding(4.dp))
+                    Text(
+                        stringResource(R.string.stopwatch_lap_row, lapNumber, formatMillis(viewModel.laps[index])),
+                        modifier = Modifier.padding(4.dp)
+                    )
                 }
             }
         }
