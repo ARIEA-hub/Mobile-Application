@@ -9,8 +9,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.alarmboss.R
 import com.example.alarmboss.ui.ringing.tasks.*
 
 @Composable
@@ -25,13 +27,13 @@ fun BossFightScreen(difficulty: Int, onSolved: () -> Unit) {
     ) {
         Spacer(Modifier.height(48.dp))
         Text(
-            text = "BOSS FIGHT", 
+            text = stringResource(R.string.boss_title),
             style = MaterialTheme.typography.displayMedium,
             color = MaterialTheme.colorScheme.error,
             fontWeight = FontWeight.Black
         )
         Text(
-            text = "Stage ${stage + 1} of 3",
+            text = stringResource(R.string.boss_stage, stage + 1, 3),
             style = MaterialTheme.typography.bodyLarge,
             color = Color.White
         )

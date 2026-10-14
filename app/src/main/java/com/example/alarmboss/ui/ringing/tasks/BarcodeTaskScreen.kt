@@ -23,6 +23,8 @@ import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.compose.ui.res.stringResource
+import com.example.alarmboss.R
 import com.example.alarmboss.ui.ringing.CameraPermissionRequired
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
@@ -56,11 +58,10 @@ fun BarcodeTaskScreen(onScanned: () -> Unit) {
     LaunchedEffect(Unit) { if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA) }
 
     Column(Modifier.fillMaxSize().padding(24.dp)) {
-        Text("Scan any barcode to dismiss", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.barcode_title), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         Text(
-            "Get up and find something with a barcode on it -- a food package, a book, " +
-                    "a bottle, anything works. Point the camera at it.",
+            stringResource(R.string.barcode_hint),
             style = MaterialTheme.typography.bodySmall
         )
         Spacer(Modifier.height(12.dp))
@@ -75,12 +76,12 @@ fun BarcodeTaskScreen(onScanned: () -> Unit) {
             }
             Spacer(Modifier.height(8.dp))
             if (lastSeen.isNotBlank()) {
-                Text("Last scanned: $lastSeen", style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.barcode_last_scanned, lastSeen), style = MaterialTheme.typography.bodySmall)
             }
         } else {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 CameraPermissionRequired(
-                    message = "Camera permission is required for this task.",
+                    message = stringResource(R.string.barcode_camera_required),
                     permanentlyDenied = permanentlyDenied,
                     onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) }
                 )

@@ -5,7 +5,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alarmboss.R
 
 @Composable
 fun WordScrambleTaskScreen(difficulty: Int, onSolved: () -> Unit) {
@@ -40,8 +43,8 @@ fun WordScrambleTaskScreen(difficulty: Int, onSolved: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Unscramble $wordCount words", style = MaterialTheme.typography.titleMedium)
-        Text("$solvedCount / $wordCount", style = MaterialTheme.typography.bodyMedium)
+        Text(pluralStringResource(R.plurals.scramble_title, wordCount, wordCount), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.task_progress, solvedCount, wordCount), style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(32.dp))
         
         Text(
@@ -58,14 +61,14 @@ fun WordScrambleTaskScreen(difficulty: Int, onSolved: () -> Unit) {
                 input = it.uppercase().filter { char -> char.isLetter() }
                 error = false
             },
-            label = { Text("Answer") },
+            label = { Text(stringResource(R.string.task_answer)) },
             singleLine = true,
             isError = error,
             modifier = Modifier.fillMaxWidth(0.8f)
         )
         
         if (error) {
-            Text("Try again", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+            Text(stringResource(R.string.task_try_again), color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
         }
         
         Spacer(Modifier.height(24.dp))
@@ -85,7 +88,7 @@ fun WordScrambleTaskScreen(difficulty: Int, onSolved: () -> Unit) {
                 error = true
             }
         }) {
-            Text("Submit")
+            Text(stringResource(R.string.task_submit))
         }
     }
 }

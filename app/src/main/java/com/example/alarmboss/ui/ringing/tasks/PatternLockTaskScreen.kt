@@ -12,7 +12,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alarmboss.R
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -79,7 +81,7 @@ fun PatternLockTaskScreen(difficulty: Int, onSolved: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = if (isMemorizePhase) "Memorize the pattern path" else "Trace the pattern",
+            text = stringResource(if (isMemorizePhase) R.string.pattern_memorize else R.string.pattern_trace),
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(32.dp))

@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
+import com.example.alarmboss.R
 import com.example.alarmboss.engine.MazeGenerator
 
 private fun findStart(maze: Array<IntArray>): Pair<Int, Int> {
@@ -32,6 +34,11 @@ fun MazeTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
 
     var playerRow by remember(maze) { mutableIntStateOf(start.first) }
     var playerCol by remember(maze) { mutableIntStateOf(start.second) }
+
+    val moveUp = stringResource(R.string.maze_move_up)
+    val moveDown = stringResource(R.string.maze_move_down)
+    val moveLeft = stringResource(R.string.maze_move_left)
+    val moveRight = stringResource(R.string.maze_move_right)
 
     // Shrink cells as the grid grows so it still fits above the controls.
     val cellSize = (320 / size - 4).coerceAtMost(48).dp
@@ -55,7 +62,7 @@ fun MazeTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Navigate the maze to dismiss alarm", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.maze_title), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(24.dp))
 
         // Render Maze Grid
@@ -91,21 +98,21 @@ fun MazeTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Button(
                 onClick = { move(-1, 0) },
-                modifier = Modifier.semantics { contentDescription = "Move up" }
+                modifier = Modifier.semantics { contentDescription = moveUp }
             ) { Text("↑") }
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 Button(
                     onClick = { move(0, -1) },
-                    modifier = Modifier.semantics { contentDescription = "Move left" }
+                    modifier = Modifier.semantics { contentDescription = moveLeft }
                 ) { Text("←") }
                 Button(
                     onClick = { move(0, 1) },
-                    modifier = Modifier.semantics { contentDescription = "Move right" }
+                    modifier = Modifier.semantics { contentDescription = moveRight }
                 ) { Text("→") }
             }
             Button(
                 onClick = { move(1, 0) },
-                modifier = Modifier.semantics { contentDescription = "Move down" }
+                modifier = Modifier.semantics { contentDescription = moveDown }
             ) { Text("↓") }
         }
     }

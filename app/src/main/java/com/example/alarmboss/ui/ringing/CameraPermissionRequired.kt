@@ -13,7 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.alarmboss.R
 
 /**
  * Shown in place of the camera preview when permission is missing. The ringing screen
@@ -33,7 +35,7 @@ fun CameraPermissionRequired(
         Spacer(Modifier.height(16.dp))
         if (permanentlyDenied) {
             Text(
-                "Camera access was denied. Open Settings to allow it for AlarmBoss.",
+                stringResource(R.string.camera_denied_settings),
                 style = MaterialTheme.typography.bodySmall
             )
             Spacer(Modifier.height(8.dp))
@@ -43,9 +45,9 @@ fun CameraPermissionRequired(
                     Uri.fromParts("package", context.packageName, null)
                 ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
-            }) { Text("Open Settings") }
+            }) { Text(stringResource(R.string.camera_open_settings)) }
         } else {
-            Button(onClick = onRequestPermission) { Text("Grant camera permission") }
+            Button(onClick = onRequestPermission) { Text(stringResource(R.string.camera_grant)) }
         }
     }
 }

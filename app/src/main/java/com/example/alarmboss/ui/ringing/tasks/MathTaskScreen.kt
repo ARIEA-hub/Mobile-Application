@@ -7,8 +7,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.alarmboss.R
 import kotlin.random.Random
 import androidx.compose.foundation.text.KeyboardOptions
 
@@ -40,14 +42,15 @@ fun MathTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
     val target = 3
+    val toggleSignDescription = stringResource(R.string.math_toggle_sign_description)
 
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Solve $target problems to dismiss", style = MaterialTheme.typography.titleMedium)
-        Text("$solvedCount / $target", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.math_title, target), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.task_progress, solvedCount, target), style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(24.dp))
         Text(problem.text, style = MaterialTheme.typography.displaySmall)
         Spacer(Modifier.height(16.dp))
@@ -66,7 +69,7 @@ fun MathTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
                     }
                     error = false
                 },
-                modifier = Modifier.height(56.dp).semantics { contentDescription = "Toggle negative sign" }
+                modifier = Modifier.height(56.dp).semantics { contentDescription = toggleSignDescription }
             ) {
                 Text("±", style = MaterialTheme.typography.titleMedium)
             }
@@ -80,14 +83,14 @@ fun MathTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
                         error = false
                     }
                 },
-                label = { Text("Answer") },
+                label = { Text(stringResource(R.string.task_answer)) },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 isError = error,
                 modifier = Modifier.weight(1f)
             )
         }
-        if (error) Text("Try again", color = MaterialTheme.colorScheme.error)
+        if (error) Text(stringResource(R.string.task_try_again), color = MaterialTheme.colorScheme.error)
         Spacer(Modifier.height(16.dp))
         Button(onClick = {
             if (input.toIntOrNull() == problem.answer) {
@@ -97,6 +100,6 @@ fun MathTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
             } else {
                 error = true
             }
-        }) { Text("Submit") }
+        }) { Text(stringResource(R.string.task_submit)) }
     }
 }
