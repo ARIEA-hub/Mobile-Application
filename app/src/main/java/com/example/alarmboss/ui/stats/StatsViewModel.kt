@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.alarmboss.data.ProfileRepository
 import com.example.alarmboss.data.UserProfile
 import com.example.alarmboss.data.WakeEvent
+import com.example.alarmboss.util.StreakManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.Instant
 import java.time.LocalDate
@@ -19,6 +21,11 @@ class StatsViewModel(private val profileRepository: ProfileRepository) : ViewMod
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = UserProfile()
     )
+
+    /** Same rule as the alarm list banner, so both screens always show the same streak. */
+    val activeStreak: StateFlow<Int> = profile
+        .map { StreakManager.activeStreak(it.currentStreak, StreakManager.parseDate(it.lastWakeDate), LocalDate.now()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     val wakeEvents: StateFlow<List<WakeEvent>> = profileRepository.observeWakeEvents().stateIn(
         scope = viewModelScope,

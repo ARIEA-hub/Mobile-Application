@@ -2,6 +2,7 @@ package com.example.alarmboss.util
 
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class StreakManagerTest {
@@ -26,5 +27,33 @@ class StreakManagerTest {
     @Test
     fun `a gap of a missed day restarts the streak at 1`() {
         assertEquals(1, StreakManager.nextStreak(9, today.minusDays(2), today))
+    }
+
+    @Test
+    fun `a streak woken up today is still active`() {
+        assertEquals(5, StreakManager.activeStreak(5, today, today))
+    }
+
+    @Test
+    fun `a streak last extended yesterday is still active`() {
+        assertEquals(5, StreakManager.activeStreak(5, today.minusDays(1), today))
+    }
+
+    @Test
+    fun `a streak is over once a full day has been missed`() {
+        assertEquals(0, StreakManager.activeStreak(5, today.minusDays(2), today))
+        assertEquals(0, StreakManager.activeStreak(5, today.minusDays(30), today))
+    }
+
+    @Test
+    fun `no recorded wake-up means no active streak`() {
+        assertEquals(0, StreakManager.activeStreak(3, null, today))
+    }
+
+    @Test
+    fun `an unreadable stored date is treated as missing`() {
+        assertNull(StreakManager.parseDate("not-a-date"))
+        assertNull(StreakManager.parseDate(null))
+        assertEquals(today, StreakManager.parseDate("2026-09-22"))
     }
 }

@@ -17,6 +17,7 @@ import com.example.alarmboss.R
 fun StatsScreen(viewModel: StatsViewModel) {
     val profile by viewModel.profile.collectAsState()
     val wakeEvents by viewModel.wakeEvents.collectAsState()
+    val activeStreak by viewModel.activeStreak.collectAsState()
     val scrollState = rememberScrollState()
 
     val currentLevel = profile.level
@@ -55,7 +56,7 @@ fun StatsScreen(viewModel: StatsViewModel) {
             Card(modifier = Modifier.weight(1f)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(stringResource(R.string.stats_current_streak), style = MaterialTheme.typography.titleMedium)
-                    Text(stringResource(R.string.stats_streak_value, profile.currentStreak), style = MaterialTheme.typography.headlineMedium)
+                    Text(stringResource(R.string.stats_streak_value, activeStreak), style = MaterialTheme.typography.headlineMedium)
                 }
             }
             Card(modifier = Modifier.weight(1f)) {

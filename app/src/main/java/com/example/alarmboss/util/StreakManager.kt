@@ -7,14 +7,15 @@ import java.time.temporal.ChronoUnit
 class StreakManager(context: Context) {
     private val prefs = context.getSharedPreferences("alarm_boss_prefs", Context.MODE_PRIVATE)
 
-    fun getCurrentStreak(): Int = prefs.getInt(KEY_STREAK, 0)
+    private fun lastWakeDate(): LocalDate? = parseDate(prefs.getString(KEY_LAST_DATE, null))
+
+    /** The streak that is still alive today: one broken by a missed day reads 0, not its old value. */
+    fun getCurrentStreak(today: LocalDate = LocalDate.now()): Int =
+        activeStreak(prefs.getInt(KEY_STREAK, 0), lastWakeDate(), today)
 
     /** The streak as it will stand once today's wake-up is recorded, without recording it. */
-    fun projectedStreak(today: LocalDate = LocalDate.now()): Int {
-        val lastDate = prefs.getString(KEY_LAST_DATE, null)
-            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        return nextStreak(getCurrentStreak(), lastDate, today)
-    }
+    fun projectedStreak(today: LocalDate = LocalDate.now()): Int =
+        nextStreak(getCurrentStreak(today), lastWakeDate(), today)
 
     /** Call once per alarm the user actually wakes up to and dismisses. Returns the new streak. */
     fun recordSuccessfulWakeUp(today: LocalDate = LocalDate.now()): Int {
@@ -30,6 +31,9 @@ class StreakManager(context: Context) {
         private const val KEY_STREAK = "current_streak"
         private const val KEY_LAST_DATE = "last_success_date"
 
+        fun parseDate(value: String?): LocalDate? =
+            value?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+
         /**
          * Pure streak transition, kept separate from SharedPreferences so it's unit testable:
          * same day is a no-op, the next day extends the streak, any gap (or a first wake-up)
@@ -43,6 +47,16 @@ class StreakManager(context: Context) {
                 daysBetween == 1L -> currentStreak + 1
                 else -> 1
             }
+        }
+
+        /**
+         * What to display today. A stored streak is only kept alive by waking up today or
+         * yesterday; once a full day has been missed it is over, even though nothing has
+         * recorded that yet (the reset only happens at the next wake-up).
+         */
+        fun activeStreak(storedStreak: Int, lastDate: LocalDate?, today: LocalDate): Int {
+            if (lastDate == null) return 0
+            return if (ChronoUnit.DAYS.between(lastDate, today) > 1L) 0 else storedStreak
         }
     }
 }
