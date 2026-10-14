@@ -106,7 +106,12 @@ fun PatternLockTaskScreen(difficulty: Int, onSolved: () -> Unit) {
                         .aspectRatio(1f)
                         .clip(CircleShape)
                         .background(tileColor)
-                        .clickable(enabled = !isMemorizePhase && !errorState && !isSelectedInput) {
+                        .clickable(
+                            // Stop taking taps once the pattern is complete: an extra tap during the
+                            // finish delay would index past the end of the target and crash.
+                            enabled = !isMemorizePhase && !errorState && !isSelectedInput &&
+                                currentInput.size < targetPattern.size
+                        ) {
                             currentInput = currentInput + index
                         },
                     contentAlignment = Alignment.Center
