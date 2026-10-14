@@ -4,6 +4,18 @@ An advanced Android alarm application built using Jetpack Compose, Kotlin, and M
 
 ---
 
+## 🎮 Progression
+
+Every alarm you actually wake up to earns XP, so mornings become a game you can level up in.
+
+- **XP and levels:** Easy, Medium and Strict alarms pay different XP, with bonuses for your streak and for finishing fast. Levels follow a square-root curve (level 2 at 50 XP, level 3 at 200 XP).
+- **Wake-up streak:** consecutive days with a completed alarm. Miss a day and it restarts at 1.
+- **Boss fights:** on every 7th day of a streak, Medium and Strict alarms swap their task for a three-stage boss fight (Math, then Sequence, then Maze) worth a flat 100 XP. Easy alarms stay one tap.
+- **Adaptive difficulty:** Math and Maze tasks get harder as your level and streak grow (difficulty 1-10).
+- **Stats tab:** level progress, streak, bosses defeated, records and a four-week wake-up calendar.
+
+---
+
 ## 🚀 Automated Release Pipeline
 
 This project uses **GitHub Actions** to automatically build and compile the application into a production-ready Android APK whenever a new version tag is published. 
