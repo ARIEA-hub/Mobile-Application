@@ -12,7 +12,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import com.example.alarmboss.AlarmBossApp
 import com.example.alarmboss.alarm.AlarmReceiver
 import com.example.alarmboss.alarm.AlarmScheduler
 import com.example.alarmboss.alarm.AlarmService
@@ -21,6 +24,11 @@ import com.example.alarmboss.data.AlarmMode
 import com.example.alarmboss.data.MediumTaskType
 import com.example.alarmboss.data.MentalExerciseType
 import com.example.alarmboss.data.StrictExerciseCategory
+import com.example.alarmboss.data.UserProfile
+import com.example.alarmboss.data.WakeEvent
+import com.example.alarmboss.engine.BossFightManager
+import com.example.alarmboss.engine.DifficultyEngine
+import com.example.alarmboss.engine.ProgressionEngine
 import com.example.alarmboss.ui.ringing.tasks.BarcodeTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.LyricsTaskScreen
 import com.example.alarmboss.ui.ringing.tasks.MathTaskScreen
@@ -30,6 +38,8 @@ import com.example.alarmboss.ui.ringing.tasks.ReadingTaskScreen
 import androidx.compose.ui.platform.LocalContext
 import com.example.alarmboss.ui.theme.AlarmBossTheme
 import com.example.alarmboss.util.StreakManager
+import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 /**
  * Full-screen activity shown over the lock screen when an alarm fires. This is the ONLY
@@ -40,6 +50,7 @@ import com.example.alarmboss.util.StreakManager
 class AlarmRingingActivity : ComponentActivity() {
 
     private val viewModel: AlarmRingingViewModel by viewModels()
+    private var dismissed = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,10 +67,30 @@ class AlarmRingingActivity : ComponentActivity() {
         setContent {
             AlarmBossTheme {
                 val alarm by viewModel.alarm.collectAsState()
-                Surface(Modifier.fillMaxSize()) {
-                    alarm?.let {
-                        RingingContent(it, onDismiss = ::dismissAlarm, onSnooze = ::snoozeAlarm)
-                    } ?: LoadingContent()
+                val profile by viewModel.profile.collectAsState()
+                Surface(
+                    Modifier
+                        .fillMaxSize()
+                        // Observe only (Initial pass, nothing consumed): the first touch marks reaction time.
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                awaitPointerEvent(PointerEventPass.Initial)
+                                viewModel.onFirstTouch()
+                            }
+                        }
+                ) {
+                    val currentAlarm = alarm
+                    val currentProfile = profile
+                    if (currentAlarm != null && currentProfile != null) {
+                        RingingContent(
+                            alarm = currentAlarm,
+                            plan = planFor(currentAlarm, currentProfile, viewModel.projectedStreak),
+                            onDismiss = ::dismissAlarm,
+                            onSnooze = ::snoozeAlarm
+                        )
+                    } else {
+                        LoadingContent()
+                    }
                 }
             }
         }
@@ -80,11 +111,52 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 
     private fun dismissAlarm() {
+        // A double tap on the final step must not award XP twice.
+        if (dismissed) return
+        dismissed = true
+
         // Reaching here means the alarm's task (if any) was actually completed, not just
-        // snoozed away -- that's what counts as a genuine wake-up for the streak.
-        StreakManager(this).recordSuccessfulWakeUp()
+        // snoozed away -- that's what counts as a genuine wake-up for the streak and XP.
+        val newStreak = StreakManager(this).recordSuccessfulWakeUp()
+        recordProgression(newStreak)
         AlarmService.stop(this)
         finish()
+    }
+
+    private fun recordProgression(newStreak: Int) {
+        val alarm = viewModel.alarm.value ?: return
+        val profile = viewModel.profile.value ?: return
+        val plan = planFor(alarm, profile, viewModel.projectedStreak)
+
+        val now = System.currentTimeMillis()
+        val completionMs = now - viewModel.ringStartedAt
+        val reactionMs = (viewModel.firstTouchAt.takeIf { it > 0L } ?: now) - viewModel.ringStartedAt
+
+        val outcome = ProgressionEngine.applyWakeUp(
+            profile = profile,
+            mode = alarm.mode,
+            strictCategory = alarm.strictCategory.takeIf { alarm.mode == AlarmMode.STRICT },
+            isBossFight = plan.isBossFight,
+            newStreak = newStreak,
+            reactionMs = reactionMs,
+            completionMs = completionMs,
+            today = LocalDate.now()
+        )
+        val event = WakeEvent(
+            alarmId = alarm.id,
+            triggeredAt = viewModel.ringStartedAt,
+            dismissedAt = now,
+            challengeType = challengeType(alarm, plan),
+            difficulty = plan.difficulty,
+            xpEarned = outcome.xpEarned,
+            reactionTimeMs = reactionMs,
+            completionTimeMs = completionMs,
+            isBossFight = plan.isBossFight
+        )
+
+        // App scope, not lifecycleScope: finish() cancels the latter before the write lands.
+        val app = application as AlarmBossApp
+        app.appScope.launch { app.profileRepository.recordWakeUp(event, outcome.profile) }
     }
 
     /** Only offered in Easy mode: stops the current ring and re-fires the alarm in 5 minutes. */
@@ -97,13 +169,35 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 }
 
+/** What this particular ring asks of the user, decided once from the profile snapshot. */
+private data class RingPlan(val isBossFight: Boolean, val difficulty: Int)
+
+// Easy alarms stay one tap by contract; boss fights replace the task on Medium and Strict ones.
+private fun planFor(alarm: Alarm, profile: UserProfile, projectedStreak: Int) = RingPlan(
+    isBossFight = alarm.mode != AlarmMode.EASY && BossFightManager.isBossFightDay(projectedStreak),
+    difficulty = DifficultyEngine.calculate(profile.level, projectedStreak)
+)
+
+private fun challengeType(alarm: Alarm, plan: RingPlan): String = when {
+    plan.isBossFight -> "BOSS_FIGHT"
+    alarm.mode == AlarmMode.EASY -> "EASY"
+    alarm.mode == AlarmMode.MEDIUM -> "MEDIUM"
+    alarm.strictCategory == StrictExerciseCategory.PHYSICAL -> "STRICT_PHYSICAL"
+    else -> "STRICT_MENTAL"
+}
+
 @Composable
 private fun LoadingContent() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
 }
 
 @Composable
-private fun RingingContent(alarm: Alarm, onDismiss: () -> Unit, onSnooze: () -> Unit) {
+private fun RingingContent(alarm: Alarm, plan: RingPlan, onDismiss: () -> Unit, onSnooze: () -> Unit) {
+    if (plan.isBossFight) {
+        BossFightScreen(difficulty = plan.difficulty, onSolved = onDismiss)
+        return
+    }
+
     val context = LocalContext.current
     val streakManager = remember { StreakManager(context) }
     val streak = remember { streakManager.getCurrentStreak() }
@@ -120,7 +214,7 @@ private fun RingingContent(alarm: Alarm, onDismiss: () -> Unit, onSnooze: () -> 
             AlarmMode.MEDIUM -> {
                 val task = remember(alarm.id) { alarm.enabledMediumTasks.randomOrNull() ?: MediumTaskType.MATH }
                 when (task) {
-                    MediumTaskType.MATH -> MathTaskScreen(onSolved = onDismiss)
+                    MediumTaskType.MATH -> MathTaskScreen(difficulty = plan.difficulty, onSolved = onDismiss)
                     MediumTaskType.READING -> ReadingTaskScreen(onDone = onDismiss)
                     MediumTaskType.LYRICS -> LyricsTaskScreen(onDone = onDismiss)
                     MediumTaskType.BARCODE -> BarcodeTaskScreen(onScanned = onDismiss)
@@ -130,7 +224,7 @@ private fun RingingContent(alarm: Alarm, onDismiss: () -> Unit, onSnooze: () -> 
                 if (alarm.strictCategory == StrictExerciseCategory.MENTAL) {
                     when (alarm.mentalExerciseType) {
                         MentalExerciseType.MEMORY_GRID -> MemoryTaskScreen(onSolved = onDismiss)
-                        MentalExerciseType.MAZE -> MazeTaskScreen(onSolved = onDismiss)
+                        MentalExerciseType.MAZE -> MazeTaskScreen(difficulty = plan.difficulty, onSolved = onDismiss)
                     }
                 } else {
                     StrictExerciseScreen(

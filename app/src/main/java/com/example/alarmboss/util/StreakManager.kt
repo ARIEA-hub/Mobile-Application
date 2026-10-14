@@ -9,14 +9,21 @@ class StreakManager(context: Context) {
 
     fun getCurrentStreak(): Int = prefs.getInt(KEY_STREAK, 0)
 
-    /** Call once per alarm the user actually wakes up to and dismisses. */
-    fun recordSuccessfulWakeUp(today: LocalDate = LocalDate.now()) {
+    /** The streak as it will stand once today's wake-up is recorded, without recording it. */
+    fun projectedStreak(today: LocalDate = LocalDate.now()): Int {
         val lastDate = prefs.getString(KEY_LAST_DATE, null)
             ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        return nextStreak(getCurrentStreak(), lastDate, today)
+    }
+
+    /** Call once per alarm the user actually wakes up to and dismisses. Returns the new streak. */
+    fun recordSuccessfulWakeUp(today: LocalDate = LocalDate.now()): Int {
+        val newStreak = projectedStreak(today)
         prefs.edit()
-            .putInt(KEY_STREAK, nextStreak(getCurrentStreak(), lastDate, today))
+            .putInt(KEY_STREAK, newStreak)
             .putString(KEY_LAST_DATE, today.toString())
             .apply()
+        return newStreak
     }
 
     companion object {

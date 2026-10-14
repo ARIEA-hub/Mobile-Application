@@ -20,6 +20,12 @@ class ProfileRepository(
     suspend fun recordWakeEvent(event: WakeEvent) {
         wakeEventDao.insert(event)
     }
+
+    /** Stores a completed wake-up and the profile it produced together. */
+    suspend fun recordWakeUp(event: WakeEvent, updatedProfile: UserProfile) {
+        wakeEventDao.insert(event)
+        profileDao.insertOrUpdate(updatedProfile)
+    }
     
     fun observeWakeEvents(): Flow<List<WakeEvent>> = wakeEventDao.observeAll()
 }
