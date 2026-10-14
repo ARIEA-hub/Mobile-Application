@@ -1,5 +1,8 @@
 package com.example.alarmboss.ui.stopwatch
 
+import android.os.SystemClock
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,21 +11,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import java.util.Locale
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StopwatchScreen() {
-    var running by remember { mutableStateOf(false) }
-    var elapsedMs by remember { mutableLongStateOf(0L) }
-    var startBase by remember { mutableLongStateOf(0L) }
-    val laps = remember { mutableStateListOf<Long>() }
+    // Activity-scoped, not nav-entry-scoped: switching tabs pops this destination.
+    val activity = LocalActivity.current as ComponentActivity
+    val viewModel: StopwatchViewModel = viewModel(viewModelStoreOwner = activity)
+    val state = viewModel.state
 
-    LaunchedEffect(running) {
-        if (!running) return@LaunchedEffect
-        startBase = System.currentTimeMillis() - elapsedMs
-        while (running) {
-            elapsedMs = System.currentTimeMillis() - startBase
+    var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    LaunchedEffect(state.running) {
+        while (state.running) {
+            now = SystemClock.elapsedRealtime()
             delay(31) // ~30fps refresh, plenty for a stopwatch display
         }
     }
@@ -32,18 +36,18 @@ fun StopwatchScreen() {
             Modifier.fillMaxSize().padding(padding).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(formatMillis(elapsedMs), style = MaterialTheme.typography.displayMedium)
+            Text(formatMillis(state.elapsed(now)), style = MaterialTheme.typography.displayMedium)
             Spacer(Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(onClick = { running = !running }) { Text(if (running) "Pause" else "Start") }
-                OutlinedButton(onClick = { if (running) laps.add(0, elapsedMs) }) { Text("Lap") }
-                OutlinedButton(onClick = { running = false; elapsedMs = 0L; laps.clear() }) { Text("Reset") }
+                Button(onClick = viewModel::toggle) { Text(if (state.running) "Pause" else "Start") }
+                OutlinedButton(onClick = viewModel::lap) { Text("Lap") }
+                OutlinedButton(onClick = viewModel::reset) { Text("Reset") }
             }
             Spacer(Modifier.height(16.dp))
             LazyColumn(Modifier.fillMaxWidth()) {
-                items(laps.size) { index ->
-                    val lapNumber = laps.size - index
-                    Text("Lap $lapNumber: ${formatMillis(laps[index])}", modifier = Modifier.padding(4.dp))
+                items(viewModel.laps.size) { index ->
+                    val lapNumber = viewModel.laps.size - index
+                    Text("Lap $lapNumber: ${formatMillis(viewModel.laps[index])}", modifier = Modifier.padding(4.dp))
                 }
             }
         }
