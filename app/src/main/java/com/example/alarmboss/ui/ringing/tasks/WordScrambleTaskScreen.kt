@@ -76,7 +76,10 @@ fun WordScrambleTaskScreen(difficulty: Int, onSolved: () -> Unit) {
                 if (solvedCount >= wordCount) {
                     onSolved()
                 } else {
-                    currentWord = wordList.random()
+                    // Never repeat the word just solved: the reset effect keys on the word, so a
+                    // repeat would leave the correct answer sitting in the box.
+                    input = ""
+                    currentWord = wordList.filter { it != currentWord }.random()
                 }
             } else {
                 error = true
