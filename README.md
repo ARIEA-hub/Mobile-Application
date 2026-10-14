@@ -1,6 +1,6 @@
 # AlarmBoss 🚨
 
-An advanced Android alarm application built using Jetpack Compose, Kotlin, and Material Design 3. AlarmBoss features strict challenges (Math, Lyrics, Barcodes, and Reading tasks) to ensure you wake up on time.
+An advanced Android alarm application built using Jetpack Compose, Kotlin, and Material Design 3. AlarmBoss features strict challenges (Math, Lyrics, Barcodes, Reading, Pattern Lock and Word Scramble tasks) to ensure you wake up on time.
 
 ---
 
