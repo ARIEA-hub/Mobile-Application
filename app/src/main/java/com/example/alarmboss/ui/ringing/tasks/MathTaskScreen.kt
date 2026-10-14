@@ -9,22 +9,24 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import kotlin.math.max
 import kotlin.random.Random
 import androidx.compose.foundation.text.KeyboardOptions
 
 
 private data class Problem(val text: String, val answer: Int)
 
-private fun randomProblem(): Problem {
-    val a = Random.nextInt(2, 50)
-    val b = Random.nextInt(2, 50)
+// difficulty 1 matches the original ranges (operands < 50, factors < 12); each step widens them.
+private fun randomProblem(difficulty: Int): Problem {
+    val maxOperand = 40 + difficulty * 10
+    val maxFactor = 11 + difficulty
+    val a = Random.nextInt(2, maxOperand)
+    val b = Random.nextInt(2, maxOperand)
     return when (Random.nextInt(3)) {
         0 -> Problem("$a + $b", a + b)
         1 -> Problem("$a - $b", a - b)
         else -> {
-            val small = Random.nextInt(2, 12)
-            val small2 = Random.nextInt(2, 12)
+            val small = Random.nextInt(2, maxFactor)
+            val small2 = Random.nextInt(2, maxFactor)
             Problem("$small × $small2", small * small2)
         }
     }
@@ -34,7 +36,7 @@ private fun randomProblem(): Problem {
 @Composable
 fun MathTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
     var solvedCount by remember { mutableIntStateOf(0) }
-    var problem by remember { mutableStateOf(randomProblem()) }
+    var problem by remember { mutableStateOf(randomProblem(difficulty)) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
     val target = 3
@@ -91,7 +93,7 @@ fun MathTaskScreen(difficulty: Int = 1, onSolved: () -> Unit) {
             if (input.toIntOrNull() == problem.answer) {
                 solvedCount++
                 input = ""
-                if (solvedCount >= target) onSolved() else problem = randomProblem()
+                if (solvedCount >= target) onSolved() else problem = randomProblem(difficulty)
             } else {
                 error = true
             }
