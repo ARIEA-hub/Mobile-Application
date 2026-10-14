@@ -27,9 +27,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.example.alarmboss.R
 
 private const val PREFS = "alarm_boss_banners"
 private const val KEY_BATTERY_DISMISSED = "battery_banner_dismissed"
@@ -68,24 +70,23 @@ fun BatteryOptimizationBanner() {
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                "Battery optimization is on",
+                stringResource(R.string.battery_title),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Some phones stop background apps to save power, which can make an alarm ring late " +
-                    "or not at all. Let AlarmBoss run unrestricted so it wakes you on time.",
+                stringResource(R.string.battery_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer
             )
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { requestExemption(context) }) { Text("Allow") }
+                TextButton(onClick = { requestExemption(context) }) { Text(stringResource(R.string.battery_allow)) }
                 TextButton(onClick = {
                     prefs.edit().putBoolean(KEY_BATTERY_DISMISSED, true).apply()
                     dismissed = true
-                }) { Text("Not now") }
+                }) { Text(stringResource(R.string.battery_not_now)) }
             }
         }
     }

@@ -14,15 +14,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.alarmboss.R
 import com.example.alarmboss.data.*
 import com.example.alarmboss.util.formatTime12h
 import java.time.DayOfWeek
 import java.time.format.TextStyle
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,21 +90,18 @@ fun AlarmEditScreen(
     if (showCameraWarning) {
         AlertDialog(
             onDismissRequest = { showCameraWarning = false },
-            title = { Text("Camera access needed") },
-            text = {
-                Text(
-                    "This alarm's challenge uses the camera. Without it you'll be asked again " +
-                        "when the alarm rings, and may have to open Settings before you can dismiss it."
-                )
-            },
+            title = { Text(stringResource(R.string.edit_camera_warning_title)) },
+            text = { Text(stringResource(R.string.edit_camera_warning_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     showCameraWarning = false
                     saveAlarm()
-                }) { Text("Save anyway") }
+                }) { Text(stringResource(R.string.edit_camera_warning_save)) }
             },
             dismissButton = {
-                TextButton(onClick = { showCameraWarning = false }) { Text("Keep editing") }
+                TextButton(onClick = { showCameraWarning = false }) {
+                    Text(stringResource(R.string.edit_camera_warning_keep_editing))
+                }
             }
         )
     }
@@ -110,14 +109,16 @@ fun AlarmEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (base == null) "New alarm" else "Edit alarm") },
+                title = {
+                    Text(stringResource(if (base == null) R.string.edit_title_new else R.string.edit_title_edit))
+                },
                 navigationIcon = {
                     IconButton(onClick = onDone) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Cancel")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_cancel))
                     }
                 },
                 actions = {
-                    TextButton(onClick = ::onSaveClicked) { Text("Save") }
+                    TextButton(onClick = ::onSaveClicked) { Text(stringResource(R.string.action_save)) }
                 }
             )
         }
@@ -133,28 +134,32 @@ fun AlarmEditScreen(
             OutlinedButton(onClick = {
                 TimePickerDialog(context, { _, h, m -> hour = h; minute = m }, hour, minute, false).show()
             }) {
-                Text("Time: ${formatTime12h(hour, minute)}")
+                Text(stringResource(R.string.edit_time, formatTime12h(hour, minute)))
             }
 
-            OutlinedTextField(value = label, onValueChange = { label = it }, label = { Text("Label") })
+            OutlinedTextField(
+                value = label,
+                onValueChange = { label = it },
+                label = { Text(stringResource(R.string.edit_label)) }
+            )
 
-            Text("Repeat", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.edit_repeat), style = MaterialTheme.typography.titleSmall)
             DaySelector(selected = days, onChange = { days = it })
 
-            Text("Mode", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.edit_mode), style = MaterialTheme.typography.titleSmall)
             SingleChoiceSegmentedButtonRow {
                 AlarmMode.values().forEachIndexed { index, m ->
                     SegmentedButton(
                         selected = mode == m,
                         onClick = { mode = m },
                         shape = SegmentedButtonDefaults.itemShape(index, AlarmMode.values().size)
-                    ) { Text(m.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                    ) { Text(modeName(m)) }
                 }
             }
 
             when (mode) {
                 AlarmMode.EASY -> Text(
-                    "Rings normally; dismiss or snooze with one tap.",
+                    stringResource(R.string.edit_easy_description),
                     style = MaterialTheme.typography.bodySmall
                 )
                 AlarmMode.MEDIUM -> MediumTaskPicker(enabledTasks) { enabledTasks = it }
@@ -170,14 +175,14 @@ fun AlarmEditScreen(
                 )
             }
 
-            Text("Sound", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.edit_sound), style = MaterialTheme.typography.titleSmall)
             OutlinedButton(onClick = { soundPicker() }) {
-                Text(if (soundUri == null) "Default alarm sound" else "Custom sound selected")
+                Text(stringResource(if (soundUri == null) R.string.edit_sound_default else R.string.edit_sound_custom))
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = vibrate, onCheckedChange = { vibrate = it })
-                Text("Vibrate")
+                Text(stringResource(R.string.edit_vibrate))
             }
         }
     }
@@ -185,9 +190,11 @@ fun AlarmEditScreen(
 
 @Composable
 private fun DaySelector(selected: Set<Int>, onChange: (Set<Int>) -> Unit) {
+    // Read from the configuration, not Locale.getDefault(), so labels update if the language changes.
+    val locale = LocalConfiguration.current.locales[0]
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         (1..7).forEach { iso ->
-            val label = DayOfWeek.of(iso).getDisplayName(TextStyle.NARROW, Locale.getDefault())
+            val label = DayOfWeek.of(iso).getDisplayName(TextStyle.NARROW, locale)
             FilterChip(
                 selected = selected.contains(iso),
                 onClick = {
@@ -203,7 +210,7 @@ private fun DaySelector(selected: Set<Int>, onChange: (Set<Int>) -> Unit) {
 private fun MediumTaskPicker(enabled: Set<MediumTaskType>, onChange: (Set<MediumTaskType>) -> Unit) {
     Column {
         Text(
-            "The app will randomly pick ONE of your checked tasks each time this alarm rings.",
+            stringResource(R.string.edit_medium_description),
             style = MaterialTheme.typography.bodySmall
         )
         MediumTaskType.values().forEach { task ->
@@ -215,19 +222,10 @@ private fun MediumTaskPicker(enabled: Set<MediumTaskType>, onChange: (Set<Medium
                         if (next.isNotEmpty()) onChange(next)
                     }
                 )
-                Text(taskLabel(task))
+                Text(taskName(task))
             }
         }
     }
-}
-
-private fun taskLabel(task: MediumTaskType) = when (task) {
-    MediumTaskType.MATH -> "Math problem"
-    MediumTaskType.READING -> "Read a passage"
-    MediumTaskType.LYRICS -> "Sing along to lyrics"
-    MediumTaskType.BARCODE -> "Scan a barcode"
-    MediumTaskType.PATTERN_LOCK -> "Memorize a pattern"
-    MediumTaskType.WORD_SCRAMBLE -> "Unscramble words"
 }
 
 @Composable
@@ -243,12 +241,12 @@ private fun StrictConfig(
 ) {
     Column {
         Text(
-            "Strict mode requires completing a verified physical workout or mental puzzle before the alarm can be dismissed.",
+            stringResource(R.string.edit_strict_description),
             style = MaterialTheme.typography.bodySmall
         )
         Spacer(Modifier.height(12.dp))
 
-        Text("Strict Category", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.edit_strict_category), style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(4.dp))
         SingleChoiceSegmentedButtonRow {
             StrictExerciseCategory.values().forEachIndexed { index, cat ->
@@ -257,7 +255,12 @@ private fun StrictConfig(
                     onClick = { onStrictCategoryChange(cat) },
                     shape = SegmentedButtonDefaults.itemShape(index, StrictExerciseCategory.values().size)
                 ) {
-                    Text(if (cat == StrictExerciseCategory.PHYSICAL) "Physical" else "Mental")
+                    Text(
+                        stringResource(
+                            if (cat == StrictExerciseCategory.PHYSICAL) R.string.edit_strict_physical
+                            else R.string.edit_strict_mental
+                        )
+                    )
                 }
             }
         }
@@ -265,7 +268,7 @@ private fun StrictConfig(
         Spacer(Modifier.height(16.dp))
 
         if (strictCategory == StrictExerciseCategory.PHYSICAL) {
-            Text("Physical Exercise Type", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.edit_physical_type), style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(4.dp))
             SingleChoiceSegmentedButtonRow {
                 ExerciseType.values().forEachIndexed { index, e ->
@@ -273,14 +276,14 @@ private fun StrictConfig(
                         selected = exerciseType == e,
                         onClick = { onExerciseTypeChange(e) },
                         shape = SegmentedButtonDefaults.itemShape(index, ExerciseType.values().size)
-                    ) { Text(if (e == ExerciseType.SQUATS) "Squats" else "Jumping jacks") }
+                    ) { Text(exerciseName(e)) }
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Text("Duration: ${seconds.toInt() / 60}m ${seconds.toInt() % 60}s")
+            Text(stringResource(R.string.edit_duration, seconds.toInt() / 60, seconds.toInt() % 60))
             Slider(value = seconds, onValueChange = onSecondsChange, valueRange = 60f..900f, steps = 13)
         } else {
-            Text("Mental Challenge Type", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.edit_mental_type), style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(4.dp))
             SingleChoiceSegmentedButtonRow {
                 MentalExerciseType.values().forEachIndexed { index, type ->
@@ -289,7 +292,7 @@ private fun StrictConfig(
                         onClick = { onMentalExerciseTypeChange(type) },
                         shape = SegmentedButtonDefaults.itemShape(index, MentalExerciseType.values().size)
                     ) {
-                        Text(if (type == MentalExerciseType.MEMORY_GRID) "Memory Grid" else "Maze")
+                        Text(mentalName(type))
                     }
                 }
             }

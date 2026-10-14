@@ -21,18 +21,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.alarmboss.R
 import com.example.alarmboss.data.Alarm
-import com.example.alarmboss.data.AlarmMode
-import com.example.alarmboss.data.ExerciseType
-import com.example.alarmboss.data.MentalExerciseType
-import com.example.alarmboss.data.StrictExerciseCategory
 import com.example.alarmboss.data.isAlarmLocked
 import com.example.alarmboss.ui.theme.StreakFlameDark
 import com.example.alarmboss.ui.theme.StreakFlameLight
@@ -57,10 +57,10 @@ fun AlarmListScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Alarms") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_alarms)) }) },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddAlarm) {
-                Icon(Icons.Default.Add, contentDescription = "Add alarm")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.alarms_add_description))
             }
         }
     ) { padding ->
@@ -79,7 +79,7 @@ fun AlarmListScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "🔥 Current Streak: $currentStreak Days 🔥",
+                        text = pluralStringResource(R.plurals.alarms_streak_banner, currentStreak, currentStreak),
                         fontWeight = FontWeight.Bold,
                         color = streakColor
                     )
@@ -88,7 +88,7 @@ fun AlarmListScreen(
 
             if (alarms.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No alarms yet. Tap + to add one.")
+                    Text(stringResource(R.string.alarms_empty))
                 }
             } else {
                 LazyColumn(Modifier.fillMaxSize()) {
@@ -139,13 +139,13 @@ private fun ExactAlarmPermissionBanner() {
         ) {
             Column(Modifier.padding(16.dp)) {
                 Text(
-                    "Exact alarms are off",
+                    stringResource(R.string.exact_alarm_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Without this permission, Android may delay your alarms by several minutes.",
+                    stringResource(R.string.exact_alarm_body),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
@@ -155,7 +155,7 @@ private fun ExactAlarmPermissionBanner() {
                         data = Uri.parse("package:${context.packageName}")
                     }
                     context.startActivity(intent)
-                }) { Text("Enable in Settings") }
+                }) { Text(stringResource(R.string.exact_alarm_enable)) }
             }
         }
     }
@@ -174,16 +174,18 @@ private fun AlarmRow(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete alarm?") },
-            text = { Text("The ${formatTime12h(alarm.hour, alarm.minute)} alarm will be permanently removed.") },
+            title = { Text(stringResource(R.string.alarms_delete_title)) },
+            text = {
+                Text(stringResource(R.string.alarms_delete_message, formatTime12h(alarm.hour, alarm.minute)))
+            },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
                     onDelete()
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.action_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+                TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -208,22 +210,25 @@ private fun AlarmRow(
                 color = if (isLocked) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified
             )
             if (alarm.label.isNotBlank()) Text(alarm.label, style = MaterialTheme.typography.bodyMedium)
-            Text(modeLabel(alarm), style = MaterialTheme.typography.bodySmall)
+            Text(modeSummary(alarm), style = MaterialTheme.typography.bodySmall)
             if (alarm.repeatDays.isNotEmpty()) {
-                Text(daysLabel(alarm.repeatDays), style = MaterialTheme.typography.bodySmall)
+                Text(
+                    daysLabel(alarm.repeatDays, LocalConfiguration.current.locales[0]),
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
 
         if (isLocked) {
             Icon(
                 imageVector = Icons.Default.Lock,
-                contentDescription = "Locked",
+                contentDescription = stringResource(R.string.alarms_locked_description),
                 tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(12.dp)
             )
         } else {
             IconButton(onClick = { showDeleteConfirm = true }) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete")
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.alarms_delete_description))
             }
         }
 
@@ -235,21 +240,7 @@ private fun AlarmRow(
     }
 }
 
-private fun modeLabel(alarm: Alarm): String = when (alarm.mode) {
-    AlarmMode.EASY -> "Easy"
-    AlarmMode.MEDIUM -> "Medium · random task"
-    AlarmMode.STRICT -> {
-        if (alarm.strictCategory == StrictExerciseCategory.PHYSICAL) {
-            val exName = if (alarm.exerciseType == ExerciseType.SQUATS) "Squats" else "Jumping jacks"
-            "Strict · Physical ($exName)"
-        } else {
-            val mentalName = if (alarm.mentalExerciseType == MentalExerciseType.MEMORY_GRID) "Memory Grid" else "Maze"
-            "Strict · Mental ($mentalName)"
-        }
-    }
-}
-
-private fun daysLabel(days: Set<Int>): String =
+private fun daysLabel(days: Set<Int>, locale: Locale): String =
     days.sorted().joinToString(", ") {
-        DayOfWeek.of(it).getDisplayName(TextStyle.SHORT, Locale.getDefault())
+        DayOfWeek.of(it).getDisplayName(TextStyle.SHORT, locale)
     }
