@@ -1,50 +1,41 @@
-
 package com.example.alarmboss.util
 
 import android.content.Context
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 
 class StreakManager(context: Context) {
     private val prefs = context.getSharedPreferences("alarm_boss_prefs", Context.MODE_PRIVATE)
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
-    fun getStreak(): Int = prefs.getInt("current_streak", 0)
+    fun getCurrentStreak(): Int = prefs.getInt(KEY_STREAK, 0)
 
     /** Call once per alarm the user actually wakes up to and dismisses. */
-    fun recordSuccessfulWakeUp() {
-        val today = dateFormat.format(Date())
-        val yesterday = dateFormat.format(Date(System.currentTimeMillis() - DAY_MILLIS))
-        val lastDate = prefs.getString("last_success_date", null)
-        val newStreak = nextStreak(getStreak(), lastDate, today, yesterday)
-
-        if (newStreak != getStreak() || lastDate != today) {
-            prefs.edit()
-                .putInt("current_streak", newStreak)
-                .putString("last_success_date", today)
-                .apply()
-        }
-    }
-
-    fun resetStreak() {
-        prefs.edit().putInt("current_streak", 0).remove("last_success_date").apply()
+    fun recordSuccessfulWakeUp(today: LocalDate = LocalDate.now()) {
+        val lastDate = prefs.getString(KEY_LAST_DATE, null)
+            ?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+        prefs.edit()
+            .putInt(KEY_STREAK, nextStreak(getCurrentStreak(), lastDate, today))
+            .putString(KEY_LAST_DATE, today.toString())
+            .apply()
     }
 
     companion object {
-        private const val DAY_MILLIS = 24 * 60 * 60 * 1000L
+        private const val KEY_STREAK = "current_streak"
+        private const val KEY_LAST_DATE = "last_success_date"
 
         /**
-         * Pure streak-transition logic, kept separate from SharedPreferences so it's unit
-         * testable: a wake-up on the same day already counted is a no-op, a wake-up the day
-         * right after the last one extends the streak, and any gap (or a first-ever wake-up)
+         * Pure streak transition, kept separate from SharedPreferences so it's unit testable:
+         * same day is a no-op, the next day extends the streak, any gap (or a first wake-up)
          * restarts it at 1.
          */
-        fun nextStreak(currentStreak: Int, lastSuccessDate: String?, today: String, yesterday: String): Int =
-            when (lastSuccessDate) {
-                today -> currentStreak
-                yesterday -> currentStreak + 1
+        fun nextStreak(currentStreak: Int, lastDate: LocalDate?, today: LocalDate): Int {
+            if (lastDate == null) return 1
+            val daysBetween = ChronoUnit.DAYS.between(lastDate, today)
+            return when {
+                daysBetween <= 0L -> currentStreak
+                daysBetween == 1L -> currentStreak + 1
                 else -> 1
             }
+        }
     }
 }
