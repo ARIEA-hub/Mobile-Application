@@ -9,7 +9,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.alarmboss.engine.XpEngine
 
 @Composable
 fun StatsScreen(viewModel: StatsViewModel) {
@@ -29,6 +28,7 @@ fun StatsScreen(viewModel: StatsViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .verticalScroll(scrollState)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)

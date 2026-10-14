@@ -11,11 +11,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -25,12 +30,15 @@ import androidx.navigation.compose.rememberNavController
 import com.example.alarmboss.ui.alarms.AlarmEditScreen
 import com.example.alarmboss.ui.alarms.AlarmListScreen
 import com.example.alarmboss.ui.settings.SettingsScreen
+import com.example.alarmboss.ui.stats.StatsScreen
+import com.example.alarmboss.ui.stats.StatsViewModel
 import com.example.alarmboss.ui.stopwatch.StopwatchScreen
 import com.example.alarmboss.ui.theme.AlarmBossTheme
 
 private object Routes {
     const val ALARMS = "alarms"
     const val EDIT = "edit"
+    const val STATS = "stats"
     const val STOPWATCH = "stopwatch"
     const val SETTINGS = "settings"
 }
@@ -80,6 +88,12 @@ private fun AlarmBossRoot() {
                     label = { Text("Alarms") }
                 )
                 NavigationBarItem(
+                    selected = currentDestination?.hierarchy?.any { it.route == Routes.STATS } == true,
+                    onClick = { navController.navigate(Routes.STATS) { popUpTo(navController.graph.findStartDestination().id) } },
+                    icon = { Icon(Icons.Default.EmojiEvents, contentDescription = "Stats") },
+                    label = { Text("Stats") }
+                )
+                NavigationBarItem(
                     selected = currentDestination?.hierarchy?.any { it.route == Routes.STOPWATCH } == true,
                     onClick = { navController.navigate(Routes.STOPWATCH) { popUpTo(navController.graph.findStartDestination().id) } },
                     icon = { Icon(Icons.Default.Timer, contentDescription = "Stopwatch") },
@@ -109,6 +123,13 @@ private fun AlarmBossRoot() {
                 val idArg = backStackEntry.arguments?.getString("alarmId")
                 val alarmId = idArg?.toLongOrNull()
                 AlarmEditScreen(alarmId = alarmId, onDone = { navController.popBackStack() })
+            }
+            composable(Routes.STATS) {
+                val app = LocalContext.current.applicationContext as AlarmBossApp
+                val statsViewModel: StatsViewModel = viewModel(
+                    factory = viewModelFactory { initializer { StatsViewModel(app.profileRepository) } }
+                )
+                StatsScreen(statsViewModel)
             }
             composable(Routes.STOPWATCH) { StopwatchScreen() }
             composable(Routes.SETTINGS) { SettingsScreen() }
