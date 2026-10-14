@@ -6,16 +6,27 @@ import android.app.NotificationManager
 import android.os.Build
 import com.example.alarmboss.data.AlarmDatabase
 import com.example.alarmboss.data.AlarmRepository
+import com.example.alarmboss.data.ProfileRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 class AlarmBossApp : Application() {
 
     lateinit var repository: AlarmRepository
         private set
 
+    lateinit var profileRepository: ProfileRepository
+        private set
+
+    /** Outlives any single Activity, for writes that must finish after the screen closes. */
+    val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCreate() {
         super.onCreate()
         val db = AlarmDatabase.getInstance(this)
         repository = AlarmRepository(db.alarmDao())
+        profileRepository = ProfileRepository(db.userProfileDao(), db.wakeEventDao())
         createNotificationChannels()
     }
 
