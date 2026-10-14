@@ -42,8 +42,10 @@ fun StreakCalendar(wakeDates: Set<LocalDate>, modifier: Modifier = Modifier) {
                                 .background(
                                     when {
                                         isWakeDay -> MaterialTheme.colorScheme.primary
-                                        date.isAfter(today) -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                        else -> MaterialTheme.colorScheme.surfaceVariant
+                                        // The card behind the grid is already surfaceVariant-toned, so cells
+                                        // in that color vanished into it. Contrast against the card instead.
+                                        date.isAfter(today) -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                                        else -> MaterialTheme.colorScheme.surface
                                     }
                                 )
                         )
