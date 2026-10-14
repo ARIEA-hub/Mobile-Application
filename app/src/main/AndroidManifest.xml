@@ -27,6 +27,7 @@
         android:theme="@style/Theme.AlarmBoss">
     <activity
         android:name=".ui.ringing.AlarmRingingActivity"
+        android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|uiMode|fontScale|density"
         android:exported="false"
         android:showOnLockScreen="true"
         android:excludeFromRecents="true"
