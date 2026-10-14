@@ -97,7 +97,8 @@ fun AlarmListScreen(
                             alarm = alarm,
                             onToggle = { enabled -> viewModel.setEnabled(alarm, enabled) },
                             onClick = { onEditAlarm(alarm.id) },
-                            onDelete = { viewModel.delete(alarm) }
+                            onDelete = { viewModel.delete(alarm) },
+                            modifier = Modifier.animateItem()
                         )
                         HorizontalDivider()
                     }
@@ -161,12 +162,22 @@ private fun ExactAlarmPermissionBanner() {
     }
 }
 
+/**
+ * One alarm in the list. Swiping it to the right asks to delete it, same as the delete button,
+ * which stays for anyone who can't or doesn't swipe (screen readers, switch access). Locked
+ * alarms (inside the two-hour lockdown window) can't be swiped away, matching the button.
+ *
+ * The swipe runs left to right on purpose: this is the first page of a pager, whose only possible
+ * swipe is leftward (to the next tab), so a rightward drag is the one gesture the pager never
+ * needs. See [SwipeToDeleteRow] for why leftward drags are deliberately left unclaimed.
+ */
 @Composable
 private fun AlarmRow(
     alarm: Alarm,
     onToggle: (Boolean) -> Unit,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val isLocked = isAlarmLocked(alarm.hour, alarm.minute, alarm.isEnabled)
     var showDeleteConfirm by remember { mutableStateOf(false) }
@@ -190,9 +201,35 @@ private fun AlarmRow(
         )
     }
 
+    // Never delete on the swipe itself: it only asks, and the row springs back meanwhile.
+    SwipeToDeleteRow(
+        enabled = !isLocked,
+        onRequestDelete = { showDeleteConfirm = true },
+        modifier = modifier
+    ) {
+        AlarmRowContent(
+            alarm = alarm,
+            isLocked = isLocked,
+            onToggle = onToggle,
+            onClick = onClick,
+            onRequestDelete = { showDeleteConfirm = true }
+        )
+    }
+}
+
+@Composable
+private fun AlarmRowContent(
+    alarm: Alarm,
+    isLocked: Boolean,
+    onToggle: (Boolean) -> Unit,
+    onClick: () -> Unit,
+    onRequestDelete: () -> Unit
+) {
     Row(
         Modifier
             .fillMaxWidth()
+            // Opaque, so the red delete background doesn't show through the row at rest.
+            .background(MaterialTheme.colorScheme.background)
             .then(
                 if (isLocked) Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                 else Modifier
@@ -227,7 +264,7 @@ private fun AlarmRow(
                 modifier = Modifier.padding(12.dp)
             )
         } else {
-            IconButton(onClick = { showDeleteConfirm = true }) {
+            IconButton(onClick = onRequestDelete) {
                 Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.alarms_delete_description))
             }
         }
