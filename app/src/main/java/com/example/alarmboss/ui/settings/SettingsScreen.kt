@@ -15,8 +15,8 @@ import com.example.alarmboss.util.SnoozeSettings
 
 /**
  * Where the user supplies their own content for Medium-mode tasks: reading passages and
- * lyric lines (we never ship copyrighted text), plus the target barcode/QR value for the
- * barcode task. One passage/line per row of the text box.
+ * lyric lines (we never ship copyrighted text), plus app behavior like the snooze length.
+ * One passage/line per row of the text box.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,7 +24,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val snoozeMinutes by viewModel.snoozeMinutes.collectAsState()
     val passagesText by viewModel.passagesText.collectAsState()
     val lyricsText by viewModel.lyricsText.collectAsState()
-    val barcodeTarget by viewModel.barcodeTarget.collectAsState()
 
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_settings)) }) }) { padding ->
         Column(
@@ -76,18 +75,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                 modifier = Modifier.fillMaxWidth().height(140.dp)
             )
             Button(onClick = viewModel::saveLyrics) { Text(stringResource(R.string.settings_save_lyrics)) }
-
-            Text(stringResource(R.string.settings_barcode_title), style = MaterialTheme.typography.titleSmall)
-            Text(
-                stringResource(R.string.settings_barcode_body),
-                style = MaterialTheme.typography.bodySmall
-            )
-            OutlinedTextField(
-                value = barcodeTarget,
-                onValueChange = viewModel::onBarcodeTargetChange,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(onClick = viewModel::saveBarcodeTarget) { Text(stringResource(R.string.settings_save_barcode)) }
         }
     }
 }

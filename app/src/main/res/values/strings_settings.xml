@@ -10,9 +10,6 @@
     <string name="settings_save_passages">Save passages</string>
     <string name="settings_lyrics_title">Lyric lines (one per line)</string>
     <string name="settings_save_lyrics">Save lyrics</string>
-    <string name="settings_barcode_title">Barcode task target value</string>
-    <string name="settings_barcode_body">Scan a barcode/QR code with any scanner app to get its text value, or just type something unique and print/write it as a QR code to stick somewhere you must get up to reach.</string>
-    <string name="settings_save_barcode">Save barcode target</string>
 
     <!-- Stopwatch -->
     <string name="stopwatch_start">Start</string>
