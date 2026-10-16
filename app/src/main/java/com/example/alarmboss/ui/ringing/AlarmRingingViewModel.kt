@@ -107,13 +107,43 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
         )
 
         // App scope, not viewModelScope: the screen finishes right after this and would cancel it.
-        app.appScope.launch { profileRepository.recordWakeUp(event, outcome.profile) }
+        app.appScope.launch {
+            profileRepository.recordWakeUp(event, outcome.profile)
+            if (alarm.repeatDays.isNotEmpty()) {
+                AlarmScheduler(app).schedule(alarm)
+            } else {
+                repository.setEnabled(alarm.id, false)
+            }
+            if (alarm.wakeCheck) {
+                AlarmScheduler(app).scheduleWakeCheck(alarm.id, 5)
+            }
+        }
         return true
     }
 
-    /** Only offered in Easy mode: re-fires the alarm after the chosen snooze length. */
+    /** Only offered in Easy mode: re-fires the alarm after the chosen snooze length, with a snooze XP penalty. */
     fun snooze() {
         val session = _session.value ?: return
         AlarmScheduler(app).scheduleOneOffInMinutes(session.alarm, session.snoozeMinutes)
+        app.appScope.launch {
+            val currentProfile = profileRepository.getProfile()
+            val penalizedProfile = currentProfile.copy(
+                totalXp = kotlin.math.max(0, currentProfile.totalXp - 15)
+            )
+            profileRepository.updateProfile(penalizedProfile)
+        }
+    }
+
+    fun addQuestBonusXp(bonusXp: Int) {
+        if (bonusXp <= 0) return
+        app.appScope.launch {
+            val currentProfile = profileRepository.getProfile()
+            val newTotalXp = currentProfile.totalXp + bonusXp
+            val updated = currentProfile.copy(
+                totalXp = newTotalXp,
+                level = com.example.alarmboss.engine.XpEngine.calculateLevel(newTotalXp)
+            )
+            profileRepository.updateProfile(updated)
+        }
     }
 }

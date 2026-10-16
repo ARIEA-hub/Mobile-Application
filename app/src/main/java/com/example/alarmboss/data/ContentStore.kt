@@ -21,6 +21,7 @@ class ContentStore(private val context: Context) {
     private object Keys {
         val READING_PASSAGES = stringSetPreferencesKey("reading_passages")
         val LYRIC_LINES = stringSetPreferencesKey("lyric_lines")
+        val REGISTERED_BARCODE = androidx.datastore.preferences.core.stringPreferencesKey("registered_barcode")
     }
 
     val readingPassages: Flow<List<String>> =
@@ -28,6 +29,9 @@ class ContentStore(private val context: Context) {
 
     val lyricLines: Flow<List<String>> =
         context.dataStore.data.map { it[Keys.LYRIC_LINES]?.toList() ?: emptyList() }
+
+    val registeredBarcode: Flow<String?> =
+        context.dataStore.data.map { it[Keys.REGISTERED_BARCODE] }
 
     suspend fun setReadingPassages(passages: List<String>) {
         context.dataStore.edit { it[Keys.READING_PASSAGES] = passages.toSet() }
@@ -37,8 +41,19 @@ class ContentStore(private val context: Context) {
         context.dataStore.edit { it[Keys.LYRIC_LINES] = lines.toSet() }
     }
 
+    suspend fun setRegisteredBarcode(code: String?) {
+        context.dataStore.edit {
+            if (code.isNullOrBlank()) {
+                it.remove(Keys.REGISTERED_BARCODE)
+            } else {
+                it[Keys.REGISTERED_BARCODE] = code.trim()
+            }
+        }
+    }
+
     suspend fun getRandomPassage(): String = readingPassages.first().randomOrNull() ?: defaultPassages.first()
     suspend fun getRandomLyric(): String? = lyricLines.first().randomOrNull()
+    suspend fun getRegisteredBarcode(): String? = registeredBarcode.first()
 
     companion object {
         // Generic, non-copyrighted filler text used only if the user hasn't added their own yet.
