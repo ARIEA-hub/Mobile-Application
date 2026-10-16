@@ -39,12 +39,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _lyricsText = MutableStateFlow("")
     val lyricsText: StateFlow<String> = _lyricsText
 
+    private val _barcodeText = MutableStateFlow("")
+    val barcodeText: StateFlow<String> = _barcodeText
+
     init {
         // Seed the drafts once from what's stored. Reading continuously would overwrite
         // whatever the user is in the middle of typing.
         viewModelScope.launch {
             _passagesText.value = formatPassages(store.readingPassages.first())
             _lyricsText.value = formatLyrics(store.lyricLines.first())
+            _barcodeText.value = store.getRegisteredBarcode() ?: ""
         }
     }
 
@@ -55,6 +59,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun onPassagesChange(text: String) { _passagesText.value = text }
     fun onLyricsChange(text: String) { _lyricsText.value = text }
+    fun onBarcodeChange(text: String) { _barcodeText.value = text }
 
     fun savePassages() {
         val passages = parsePassages(_passagesText.value)
@@ -64,5 +69,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun saveLyrics() {
         val lines = parseLyrics(_lyricsText.value)
         viewModelScope.launch { store.setLyricLines(lines) }
+    }
+
+    fun saveBarcode() {
+        viewModelScope.launch { store.setRegisteredBarcode(_barcodeText.value) }
     }
 }

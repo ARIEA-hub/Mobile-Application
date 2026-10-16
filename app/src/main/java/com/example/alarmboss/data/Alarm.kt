@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 import java.util.Calendar
 enum class AlarmMode { EASY, MEDIUM, STRICT }
 
-enum class MediumTaskType { MATH, READING, LYRICS, BARCODE, PATTERN_LOCK, WORD_SCRAMBLE }
+enum class MediumTaskType { MATH, READING, LYRICS, BARCODE, PATTERN_LOCK, WORD_SCRAMBLE, STEPS }
 
 // Add these enums for Strict Mode categorization
 enum class StrictExerciseCategory { PHYSICAL, MENTAL }
@@ -31,7 +31,13 @@ data class Alarm @JvmOverloads constructor(
 
     // Add these fields referenced in AlarmRingingActivity
     val strictCategory: StrictExerciseCategory = StrictExerciseCategory.PHYSICAL,
-    val mentalExerciseType: MentalExerciseType = MentalExerciseType.MEMORY_GRID
+    val mentalExerciseType: MentalExerciseType = MentalExerciseType.MEMORY_GRID,
+    val dynamicBrightness: Boolean = false,
+    val flashLightBlink: Boolean = false,
+    val gradualVolume: Boolean = false,
+    val sunriseMode: Boolean = false,
+    val wakeCheck: Boolean = false,
+    val morningBriefing: Boolean = false
 )
 
 fun isAlarmLocked(
