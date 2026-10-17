@@ -43,7 +43,6 @@ import com.example.alarmboss.data.isAlarmLocked
 import com.example.alarmboss.ui.theme.FlameGradientEnd
 import com.example.alarmboss.ui.theme.FlameGradientStart
 import com.example.alarmboss.util.formatTime12h
-
 import android.widget.Toast
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.FamilyRestroom
@@ -83,12 +82,10 @@ fun AlarmListScreen(
             action()
         }
     }
-
     // Reload the streak whenever the screen is composed or resumed
     LaunchedEffect(Unit) {
         viewModel.loadStreak()
     }
-
     if (showTemplatesSheet) {
         AlarmTemplatesBottomSheet(
             onDismiss = { showTemplatesSheet = false },
@@ -330,7 +327,6 @@ fun AlarmListScreen(
                     }
                 }
             }
-
             if (alarms.isEmpty()) {
                 Box(
                     modifier = Modifier

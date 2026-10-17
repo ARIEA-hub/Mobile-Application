@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.alarmboss.R
 import com.example.alarmboss.util.SnoozeSettings
-
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -51,7 +50,6 @@ fun SettingsScreen(
     val dpm = remember { context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager }
     val adminComponent = remember { ComponentName(context, AlarmDeviceAdminReceiver::class.java) }
     var isAdminActive by remember { mutableStateOf(dpm.isAdminActive(adminComponent)) }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -177,6 +175,7 @@ fun SettingsScreen(
                     }
                 }
             }
+
             // Snooze Card
             Card(
                 shape = RoundedCornerShape(20.dp),
@@ -297,7 +296,6 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
                     Text(

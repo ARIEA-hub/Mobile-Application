@@ -81,7 +81,6 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
         val streakResult = streakManager.recordSuccessfulWakeUpDetailed(today = LocalDate.now(), time = nowTime)
         lastWakeResult = streakResult
         val newStreak = streakResult.currentStreak
-
         val session = _session.value ?: return true
         val profile = profileSnapshot ?: return true
 

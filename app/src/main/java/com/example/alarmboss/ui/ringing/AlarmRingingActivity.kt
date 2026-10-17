@@ -60,7 +60,6 @@ class AlarmRingingActivity : ComponentActivity() {
     private val viewModel: AlarmRingingViewModel by viewModels()
     private var brightnessAnimator: ValueAnimator? = null
     private var tts: TextToSpeech? = null
-
     private var isBatteryCritical by mutableStateOf(false)
     private var isPowerOffAttemptBlocked by mutableStateOf(false)
     private var batteryAlertJob: kotlinx.coroutines.Job? = null
@@ -135,7 +134,6 @@ class AlarmRingingActivity : ComponentActivity() {
             addAction(android.content.Intent.ACTION_POWER_DISCONNECTED)
         }
         registerReceiver(batteryReceiver, filter)
-
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.getDefault()
@@ -540,7 +538,6 @@ private fun MorningQuestDialog(
                         )
                     }
                 }
-
                 Text(
                     stringResource(R.string.morning_quest_subtitle),
                     style = MaterialTheme.typography.bodyMedium,

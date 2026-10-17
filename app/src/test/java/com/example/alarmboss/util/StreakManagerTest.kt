@@ -56,7 +56,6 @@ class StreakManagerTest {
         assertNull(StreakManager.parseDate(null))
         assertEquals(today, StreakManager.parseDate("2026-09-22"))
     }
-
     @Test
     fun `morning window is strictly 5 AM to 10 AM`() {
         // Before 5 AM
