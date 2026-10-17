@@ -38,7 +38,11 @@ data class Alarm @JvmOverloads constructor(
     val sunriseMode: Boolean = false,
     val wakeCheck: Boolean = false,
     val morningBriefing: Boolean = false
-)
+) {
+    /** In Medium and Strict modes, the safeguard awake check is locked and always active. */
+    val isWakeCheckEffective: Boolean
+        get() = mode == AlarmMode.MEDIUM || mode == AlarmMode.STRICT || wakeCheck
+}
 
 fun isAlarmLocked(
     alarmHour: Int,

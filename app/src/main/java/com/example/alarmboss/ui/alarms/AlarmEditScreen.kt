@@ -91,6 +91,7 @@ private fun AlarmEditForm(
     var showCameraWarning by rememberSaveable { mutableStateOf(false) }
 
     fun saveAlarm() {
+        val effectiveWakeCheck = if (mode != AlarmMode.EASY) true else wakeCheck
         viewModel.save(
             Alarm(
                 id = base?.id ?: 0L,
@@ -106,7 +107,7 @@ private fun AlarmEditForm(
                 flashLightBlink = flashLightBlink,
                 gradualVolume = gradualVolume,
                 sunriseMode = sunriseMode,
-                wakeCheck = wakeCheck,
+                wakeCheck = effectiveWakeCheck,
                 morningBriefing = morningBriefing
             )
         )
@@ -396,11 +397,18 @@ private fun AlarmEditForm(
                         fontWeight = FontWeight.Bold
                     )
 
+                    val isWakeCheckLocked = mode == AlarmMode.MEDIUM || mode == AlarmMode.STRICT
                     FeatureSwitchRow(
                         title = stringResource(R.string.edit_wake_check),
-                        subtitle = stringResource(R.string.edit_wake_check_description),
-                        checked = wakeCheck,
-                        onCheckedChange = { wakeCheck = it }
+                        subtitle = if (isWakeCheckLocked) {
+                            "🔒 Locked & Turned ON for ${modeName(mode)} mode. Safeguard will sound the alarm again in 5 minutes unless you confirm awake."
+                        } else {
+                            stringResource(R.string.edit_wake_check_description)
+                        },
+                        checked = if (isWakeCheckLocked) true else wakeCheck,
+                        enabled = !isWakeCheckLocked,
+                        lockedBadge = if (isWakeCheckLocked) "🔒 Locked ON" else null,
+                        onCheckedChange = { if (!isWakeCheckLocked) wakeCheck = it }
                     )
 
                     FeatureSwitchRow(
@@ -420,6 +428,8 @@ private fun FeatureSwitchRow(
     title: String,
     subtitle: String,
     checked: Boolean,
+    enabled: Boolean = true,
+    lockedBadge: String? = null,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
@@ -428,14 +438,32 @@ private fun FeatureSwitchRow(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                if (lockedBadge != null) {
+                    Spacer(Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = lockedBadge,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
     }
 }
 

@@ -65,6 +65,9 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
         if (firstTouchAt == 0L) firstTouchAt = System.currentTimeMillis()
     }
 
+    var lastWakeResult: StreakManager.StreakResult? = null
+        private set
+
     /**
      * Records a genuine wake-up: the alarm's task (if any) was actually completed, not snoozed
      * away. Returns false if it was already recorded, so a double tap on the final step can't
@@ -74,7 +77,10 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
         if (completed) return false
         completed = true
 
-        val newStreak = streakManager.recordSuccessfulWakeUp()
+        val nowTime = java.time.LocalTime.now()
+        val streakResult = streakManager.recordSuccessfulWakeUpDetailed(today = LocalDate.now(), time = nowTime)
+        lastWakeResult = streakResult
+        val newStreak = streakResult.currentStreak
         val session = _session.value ?: return true
         val profile = profileSnapshot ?: return true
 
@@ -114,7 +120,8 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
             } else {
                 repository.setEnabled(alarm.id, false)
             }
-            if (alarm.wakeCheck) {
+            // Enforce wake check safeguard: always ON for Medium & Strict modes, or if manually enabled
+            if (alarm.isWakeCheckEffective) {
                 AlarmScheduler(app).scheduleWakeCheck(alarm.id, 5)
             }
         }

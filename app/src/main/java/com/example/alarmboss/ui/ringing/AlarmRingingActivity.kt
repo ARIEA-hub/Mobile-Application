@@ -44,6 +44,10 @@ import androidx.compose.ui.unit.sp
 import com.example.alarmboss.ui.ringing.tasks.StepCounterTaskScreen
 import java.util.Locale
 import com.example.alarmboss.ui.theme.AlarmBossTheme
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 /**
  * Full-screen activity shown over the lock screen when an alarm fires. This is the ONLY
@@ -56,11 +60,80 @@ class AlarmRingingActivity : ComponentActivity() {
     private val viewModel: AlarmRingingViewModel by viewModels()
     private var brightnessAnimator: ValueAnimator? = null
     private var tts: TextToSpeech? = null
+    private var isBatteryCritical by mutableStateOf(false)
+    private var isPowerOffAttemptBlocked by mutableStateOf(false)
+    private var batteryAlertJob: kotlinx.coroutines.Job? = null
+    private var isAlarmActive = true
+
+    private val batteryReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
+            when (intent?.action) {
+                android.content.Intent.ACTION_BATTERY_CHANGED -> {
+                    val level = intent.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1)
+                    val scale = intent.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1)
+                    val pct = if (scale > 0) (level * 100) / scale else -1
+                    val status = intent.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1)
+                    val isCharging = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
+                            status == android.os.BatteryManager.BATTERY_STATUS_FULL
+
+                    if (pct in 0..5 && !isCharging && isAlarmActive) {
+                        if (!isBatteryCritical) {
+                            isBatteryCritical = true
+                            startBatteryDictationLoop()
+                        }
+                    } else if (isCharging) {
+                        if (isBatteryCritical) {
+                            isBatteryCritical = false
+                            batteryAlertJob?.cancel()
+                            tts?.speak("Phone plugged in. Resuming alarm challenge.", android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "plugged_in")
+                        }
+                    }
+                }
+                android.content.Intent.ACTION_POWER_CONNECTED -> {
+                    if (isBatteryCritical) {
+                        isBatteryCritical = false
+                        batteryAlertJob?.cancel()
+                        tts?.speak("Phone plugged in. Resuming alarm challenge.", android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "plugged_in")
+                    }
+                }
+            }
+        }
+    }
+
+    private fun startBatteryDictationLoop() {
+        batteryAlertJob?.cancel()
+        batteryAlertJob = lifecycleScope.launch {
+            while (isActive && isBatteryCritical && isAlarmActive) {
+                tts?.speak("Battery low. Charge your phone.", android.speech.tts.TextToSpeech.QUEUE_FLUSH, null, "battery_alert")
+                kotlinx.coroutines.delay(3500)
+            }
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus && isAlarmActive) {
+            isPowerOffAttemptBlocked = true
+            @Suppress("DEPRECATION")
+            val closeDialog = android.content.Intent(android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS)
+            sendBroadcast(closeDialog)
+            val bringToFront = android.content.Intent(this, AlarmRingingActivity::class.java).apply {
+                flags = android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            startActivity(bringToFront)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         showOverLockScreen()
 
+        val filter = android.content.IntentFilter().apply {
+            addAction(android.content.Intent.ACTION_BATTERY_CHANGED)
+            addAction(android.content.Intent.ACTION_POWER_CONNECTED)
+            addAction(android.content.Intent.ACTION_POWER_DISCONNECTED)
+        }
+        registerReceiver(batteryReceiver, filter)
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.getDefault()
@@ -117,28 +190,77 @@ class AlarmRingingActivity : ComponentActivity() {
                             }
                         }
                 ) {
-                    session?.let {
-                        RingingContent(it, onDismiss = {
-                            if (viewModel.completeWakeUp()) {
-                                AlarmService.stop(this@AlarmRingingActivity)
-                                if (it.alarm.morningBriefing) {
-                                    val timeStr = com.example.alarmboss.util.formatTime12h(it.alarm.hour, it.alarm.minute)
-                                    val greeting = "Good morning! It is $timeStr. You are on a ${it.currentStreak} day streak. You have successfully conquered today's alarm!"
-                                    tts?.speak(greeting, TextToSpeech.QUEUE_FLUSH, null, "briefing")
+                    Box(Modifier.fillMaxSize()) {
+                        session?.let {
+                            RingingContent(it, onDismiss = {
+                                if (viewModel.completeWakeUp()) {
+                                    isAlarmActive = false
+                                    batteryAlertJob?.cancel()
+                                    AlarmService.stop(this@AlarmRingingActivity)
+                                    if (it.alarm.morningBriefing) {
+                                        val timeStr = com.example.alarmboss.util.formatTime12h(it.alarm.hour, it.alarm.minute)
+                                        val greeting = "Good morning! It is $timeStr. You are on a ${it.currentStreak} day streak. You have successfully conquered today's alarm!"
+                                        tts?.speak(greeting, TextToSpeech.QUEUE_FLUSH, null, "briefing")
+                                    }
+                                    showMorningQuest = true
                                 }
-                                showMorningQuest = true
-                            }
-                        }, onSnooze = ::snoozeAlarm)
-                    } ?: LoadingContent()
+                            }, onSnooze = ::snoozeAlarm)
+                        } ?: LoadingContent()
 
-                    if (showMorningQuest) {
-                        MorningQuestDialog(
-                            onClaimBonus = { bonusXp ->
-                                viewModel.addQuestBonusXp(bonusXp)
-                                finish()
-                            },
-                            onSkip = { finish() }
-                        )
+                        // Critical battery warning banner
+                        if (isBatteryCritical) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .align(Alignment.TopCenter),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.error,
+                                tonalElevation = 8.dp
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("⚠️ BATTERY LOW (5%)", color = MaterialTheme.colorScheme.onError, fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold, fontSize = 18.sp)
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("Plug in your phone now to prevent alarm shutdown!", color = MaterialTheme.colorScheme.onError, style = MaterialTheme.typography.bodyMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                }
+                            }
+                        }
+
+                        // Anti-power off attempt warning
+                        if (isPowerOffAttemptBlocked) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 70.dp)
+                                    .align(Alignment.TopCenter),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary)
+                            ) {
+                                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🛡️", fontSize = 20.sp)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "Power-off attempt blocked! Complete your morning challenge to dismiss.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                                    )
+                                }
+                            }
+                        }
+
+                        if (showMorningQuest) {
+                            MorningQuestDialog(
+                                isMorningStreakAwarded = viewModel.lastWakeResult?.isMorningWindow ?: true,
+                                streakCount = viewModel.lastWakeResult?.currentStreak ?: session?.currentStreak ?: 1,
+                                onClaimBonus = { bonusXp ->
+                                    viewModel.addQuestBonusXp(bonusXp)
+                                    finish()
+                                },
+                                onSkip = { finish() }
+                            )
+                        }
                     }
                 }
             }
@@ -191,6 +313,11 @@ class AlarmRingingActivity : ComponentActivity() {
     override fun onDestroy() {
         brightnessAnimator?.cancel()
         brightnessAnimator = null
+        batteryAlertJob?.cancel()
+        batteryAlertJob = null
+        try {
+            unregisterReceiver(batteryReceiver)
+        } catch (_: Exception) {}
         tts?.stop()
         tts?.shutdown()
         tts = null
@@ -363,7 +490,12 @@ private fun EasyDismissScreen(alarm: Alarm, snoozeMinutes: Int, onDismiss: () ->
 }
 
 @Composable
-private fun MorningQuestDialog(onClaimBonus: (Int) -> Unit, onSkip: () -> Unit) {
+private fun MorningQuestDialog(
+    isMorningStreakAwarded: Boolean,
+    streakCount: Int,
+    onClaimBonus: (Int) -> Unit,
+    onSkip: () -> Unit
+) {
     var waterDone by remember { mutableStateOf(false) }
     var bedDone by remember { mutableStateOf(false) }
     var stretchDone by remember { mutableStateOf(false) }
@@ -374,13 +506,38 @@ private fun MorningQuestDialog(onClaimBonus: (Int) -> Unit, onSkip: () -> Unit) 
         onDismissRequest = onSkip,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("☀️", fontSize = 22.sp)
+                Text(if (isMorningStreakAwarded) "🔥" else "☀️", fontSize = 22.sp)
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.morning_quest_title), fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Morning Window Streak Rule Banner
+                Surface(
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                    color = if (isMorningStreakAwarded) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isMorningStreakAwarded) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text(
+                            text = if (isMorningStreakAwarded) "🔥 Morning Window Conquered! Streak: $streakCount Days" else "⏰ Alarm Conquered (+XP)",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            color = if (isMorningStreakAwarded) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = if (isMorningStreakAwarded) {
+                                "Completed strictly within the 5:00 AM - 10:00 AM morning window! Your morning streak flame burns bright."
+                            } else {
+                                "Notice: Finished outside the 5 AM - 10 AM morning window. Alarms completed after 10 AM do not advance your morning streak."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isMorningStreakAwarded) MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
                 Text(
                     stringResource(R.string.morning_quest_subtitle),
                     style = MaterialTheme.typography.bodyMedium,

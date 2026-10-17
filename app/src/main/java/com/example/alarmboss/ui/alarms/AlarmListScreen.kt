@@ -43,20 +43,119 @@ import com.example.alarmboss.data.isAlarmLocked
 import com.example.alarmboss.ui.theme.FlameGradientEnd
 import com.example.alarmboss.ui.theme.FlameGradientStart
 import com.example.alarmboss.util.formatTime12h
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.FamilyRestroom
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.example.alarmboss.data.ParentModeManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmListScreen(
     onAddAlarm: () -> Unit,
     onEditAlarm: (Long) -> Unit,
+    onOpenParentMode: () -> Unit = {},
     viewModel: AlarmViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val parentManager = remember { ParentModeManager(context) }
     val alarms by viewModel.alarms.collectAsState()
     val currentStreak by viewModel.streak.collectAsState(initial = 0)
 
+    var showTemplatesSheet by remember { mutableStateOf(false) }
+
+    // Parent PIN verification dialog state
+    var showPinDialog by remember { mutableStateOf(false) }
+    var enteredPin by remember { mutableStateOf("") }
+    var pinError by remember { mutableStateOf(false) }
+    var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+
+    fun runProtectedAction(action: () -> Unit) {
+        if (parentManager.isParentModeActive() && parentManager.isStrictLockEnabled()) {
+            pendingAction = action
+            enteredPin = ""
+            pinError = false
+            showPinDialog = true
+        } else {
+            action()
+        }
+    }
     // Reload the streak whenever the screen is composed or resumed
     LaunchedEffect(Unit) {
         viewModel.loadStreak()
+    }
+    if (showTemplatesSheet) {
+        AlarmTemplatesBottomSheet(
+            onDismiss = { showTemplatesSheet = false },
+            onSelectTemplate = { templateAlarm ->
+                viewModel.save(templateAlarm)
+                Toast.makeText(context, "Applied template: ${templateAlarm.label}", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    if (showPinDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showPinDialog = false
+                pendingAction = null
+            },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Parent PIN Required", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Parent Mode is active. Enter your 4-digit PIN to modify or delete this alarm:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    OutlinedTextField(
+                        value = enteredPin,
+                        onValueChange = {
+                            enteredPin = it
+                            pinError = false
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        visualTransformation = PasswordVisualTransformation(),
+                        isError = pinError,
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (pinError) {
+                        Text("Incorrect PIN. Please try again.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    if (parentManager.verifyPin(enteredPin)) {
+                        showPinDialog = false
+                        pendingAction?.invoke()
+                        pendingAction = null
+                    } else {
+                        pinError = true
+                    }
+                }) {
+                    Text("Unlock")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showPinDialog = false
+                    pendingAction = null
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -93,6 +192,28 @@ fun AlarmListScreen(
                         }
                     }
                 },
+                actions = {
+                    // Quick Templates Button
+                    FilledTonalButton(
+                        onClick = { showTemplatesSheet = true },
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(end = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Bolt, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Templates", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    // Parent Mode Button
+                    IconButton(onClick = onOpenParentMode) {
+                        Icon(
+                            Icons.Default.FamilyRestroom,
+                            contentDescription = "Parent Mode",
+                            tint = if (parentManager.isParentModeActive()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -100,7 +221,7 @@ fun AlarmListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddAlarm,
+                onClick = { runProtectedAction(onAddAlarm) },
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
                 shape = RoundedCornerShape(16.dp)
@@ -117,7 +238,44 @@ fun AlarmListScreen(
             ExactAlarmPermissionBanner()
             BatteryOptimizationBanner()
 
-            // Hero Wake-Up Streak Card
+            // Parent Mode Status Banner if active
+            if (parentManager.isParentModeActive()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.FamilyRestroom, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Parent Mode Active: ${parentManager.getChildName()} (Age ${parentManager.getChildAge()})",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        }
+                        TextButton(
+                            onClick = onOpenParentMode,
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Text("Manage", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Hero Wake-Up Streak Card (Morning Flame with Strict 5 AM - 10 AM rule)
             if (currentStreak > 0) {
                 Card(
                     modifier = Modifier
@@ -154,16 +312,21 @@ fun AlarmListScreen(
                                 }
                                 Spacer(Modifier.height(4.dp))
                                 Text(
-                                    text = "Rise and conquer. Morning slumber has no hold on you.",
+                                    text = "Strict Morning Window: 5:00 AM – 10:00 AM",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.White.copy(alpha = 0.92f)
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "Only wake-ups completed within this morning window count toward your streak!",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.White.copy(alpha = 0.90f)
                                 )
                             }
                         }
                     }
                 }
             }
-
             if (alarms.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -220,9 +383,9 @@ fun AlarmListScreen(
                     items(alarms, key = { it.id }) { alarm ->
                         AlarmRow(
                             alarm = alarm,
-                            onToggle = { enabled -> viewModel.setEnabled(alarm, enabled) },
-                            onClick = { onEditAlarm(alarm.id) },
-                            onDelete = { viewModel.delete(alarm) },
+                            onToggle = { enabled -> runProtectedAction { viewModel.setEnabled(alarm, enabled) } },
+                            onClick = { runProtectedAction { onEditAlarm(alarm.id) } },
+                            onDelete = { runProtectedAction { viewModel.delete(alarm) } },
                             modifier = Modifier.animateItem()
                         )
                     }

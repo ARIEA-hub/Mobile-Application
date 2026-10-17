@@ -23,6 +23,18 @@ class AlarmReceiver : BroadcastReceiver() {
             }
             ACTION_WAKE_CHECK -> {
                 showWakeCheckNotification(context, alarmId)
+                // Schedule safeguard re-alarm in 60s if awake is not confirmed
+                AlarmScheduler(context).scheduleWakeCheckTimeout(alarmId, 60)
+            }
+            ACTION_WAKE_CHECK_TIMEOUT -> {
+                // User failed to confirm awake! Sound the alarm again immediately
+                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                notificationManager.cancel(WAKE_CHECK_NOTIFICATION_ID)
+                val serviceIntent = Intent(context, AlarmService::class.java).apply {
+                    action = AlarmService.ACTION_START
+                    putExtra(EXTRA_ALARM_ID, alarmId)
+                }
+                ContextCompat.startForegroundService(context, serviceIntent)
             }
             else -> {
                 val serviceIntent = Intent(context, AlarmService::class.java).apply {
@@ -68,6 +80,7 @@ class AlarmReceiver : BroadcastReceiver() {
     companion object {
         const val ACTION_ALARM_TRIGGER = "com.example.alarmboss.ACTION_ALARM_TRIGGER"
         const val ACTION_WAKE_CHECK = "com.example.alarmboss.ACTION_WAKE_CHECK"
+        const val ACTION_WAKE_CHECK_TIMEOUT = "com.example.alarmboss.ACTION_WAKE_CHECK_TIMEOUT"
         const val ACTION_CONFIRM_AWAKE = "com.example.alarmboss.ACTION_CONFIRM_AWAKE"
         const val EXTRA_ALARM_ID = "extra_alarm_id"
         const val WAKE_CHECK_NOTIFICATION_ID = 999

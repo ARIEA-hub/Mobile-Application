@@ -39,6 +39,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _lyricsText = MutableStateFlow("")
     val lyricsText: StateFlow<String> = _lyricsText
 
+    private val counselorEngine = com.example.alarmboss.counselor.SleepCounselorEngine(application)
+    private val _isGeneratingPassages = MutableStateFlow(false)
+    val isGeneratingPassages: StateFlow<Boolean> = _isGeneratingPassages
+
     private val _barcodeText = MutableStateFlow("")
     val barcodeText: StateFlow<String> = _barcodeText
 
@@ -73,5 +77,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun saveBarcode() {
         viewModelScope.launch { store.setRegisteredBarcode(_barcodeText.value) }
+    }
+
+    fun generatePassagesWithGemini() {
+        if (_isGeneratingPassages.value) return
+        viewModelScope.launch {
+            _isGeneratingPassages.value = true
+            try {
+                val generated = counselorEngine.generateReadingPassages()
+                _passagesText.value = generated
+                savePassages()
+            } finally {
+                _isGeneratingPassages.value = false
+            }
+        }
     }
 }
