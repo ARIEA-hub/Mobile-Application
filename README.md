@@ -58,7 +58,7 @@ For ages 9 to 12. A parent sets a four-digit PIN and a school-morning alarm, and
 
 ## 🌙 Sleep counselor
 
-A chat tab with sleep advice that works entirely on the device. Optionally add your own Google Gemini API key in Settings for fuller answers and AI-written reading passages. Only then are the messages you send, and your passage requests, sent to Google, using your key. No key is built into the app.
+A chat tab with sleep advice that works entirely on the device, with no key and no network. It understands about thirty sleep and wellness topics (caffeine, light, naps, insomnia, shift work, snoring, supplements and more) as well as how AlarmBoss's own modes and alarms work, tells you when something is worth a doctor's attention, and answers a message about self-harm with a caring reply that points to emergency help. Optionally add your own Google Gemini API key in Settings for fuller answers and AI-written reading passages. Only then are the messages you send, and your passage requests, sent to Google, using your key. No key is built into the app. If the online service can't be reached, or the key is wrong, the chat answers from the device within seconds and says so, instead of waiting.
 
 ## 🏖️ Holidays
 
