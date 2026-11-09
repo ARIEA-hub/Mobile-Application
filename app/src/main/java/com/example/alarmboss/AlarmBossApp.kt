@@ -42,9 +42,30 @@ class AlarmBossApp : Application() {
             enableVibration(true)
         }
         nm.createNotificationChannel(alarmChannel)
+
+        // Used only when the system refuses to start the ringing service (see AlarmFallback), so unlike
+        // the main channel it makes the noise itself.
+        val fallbackChannel = NotificationChannel(
+            CHANNEL_ALARM_FALLBACK,
+            getString(R.string.notification_fallback_channel_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = getString(R.string.notification_fallback_channel_description)
+            setBypassDnd(true)
+            enableVibration(true)
+            setSound(
+                android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+        }
+        nm.createNotificationChannel(fallbackChannel)
     }
 
     companion object {
         const val CHANNEL_ALARM = "alarm_channel"
+        const val CHANNEL_ALARM_FALLBACK = "alarm_fallback_channel"
     }
 }

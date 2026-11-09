@@ -26,6 +26,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import com.example.alarmboss.R
+import com.example.alarmboss.alarm.AlarmFallback
 import com.example.alarmboss.alarm.AlarmReceiver
 import com.example.alarmboss.alarm.AlarmService
 import com.example.alarmboss.alarm.FollowUp
@@ -153,6 +154,12 @@ class AlarmRingingActivity : ComponentActivity() {
         val alarmId = intent.getLongExtra(AlarmReceiver.EXTRA_ALARM_ID, -1L)
         val isWakeCheck = intent.getStringExtra(AlarmReceiver.EXTRA_FOLLOW_UP) == FollowUp.WAKE_CHECK.name
         viewModel.offer(alarmId, isWakeCheck)
+
+        // Opened from the fallback notification, which means the system would not let the receiver start
+        // the ringing service. This screen is visible, so it may; the service then takes over the sound.
+        if (savedInstanceState == null && intent.getBooleanExtra(EXTRA_START_SERVICE, false)) {
+            startRingingService(alarmId, isWakeCheck)
+        }
 
         setContent {
             AlarmBossTheme {
@@ -315,6 +322,16 @@ class AlarmRingingActivity : ComponentActivity() {
      * Ends the ring that is on screen. If another alarm is waiting it takes over (and the sound keeps
      * going for it); otherwise everything is silenced and the screen closes.
      */
+    private fun startRingingService(alarmId: Long, isWakeCheck: Boolean) {
+        val serviceIntent = Intent(this, AlarmService::class.java).apply {
+            action = AlarmService.ACTION_START
+            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+            if (isWakeCheck) putExtra(AlarmReceiver.EXTRA_FOLLOW_UP, FollowUp.WAKE_CHECK.name)
+        }
+        runCatching { androidx.core.content.ContextCompat.startForegroundService(this, serviceIntent) }
+        AlarmFallback.cancel(this)
+    }
+
     private fun finishRing() {
         if (viewModel.advanceToNext()) {
             showMorningQuest = false
@@ -378,6 +395,9 @@ class AlarmRingingActivity : ComponentActivity() {
         const val EXTRA_DYNAMIC_BRIGHTNESS = "extra_dynamic_brightness"
         const val EXTRA_SUNRISE_MODE = "extra_sunrise_mode"
         const val EXTRA_MORNING_BRIEFING = "extra_morning_briefing"
+
+        /** Set by the fallback notification: this screen must start the ringing service itself. */
+        const val EXTRA_START_SERVICE = "extra_start_service"
     }
 }
 

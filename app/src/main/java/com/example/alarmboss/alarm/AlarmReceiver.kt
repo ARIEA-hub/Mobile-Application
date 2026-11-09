@@ -16,7 +16,15 @@ class AlarmReceiver : BroadcastReceiver() {
             // Absent for a normal ring; names the FollowUp kind when this is one.
             intent.getStringExtra(EXTRA_FOLLOW_UP)?.let { putExtra(EXTRA_FOLLOW_UP, it) }
         }
-        ContextCompat.startForegroundService(context, serviceIntent)
+        try {
+            ContextCompat.startForegroundService(context, serviceIntent)
+        } catch (e: IllegalStateException) {
+            // ForegroundServiceStartNotAllowedException: this receiver ran too long after the alarm
+            // fired. Letting it propagate would crash the app and lose the alarm.
+            AlarmFallback.post(context, alarmId, intent.getStringExtra(EXTRA_FOLLOW_UP))
+        } catch (e: SecurityException) {
+            AlarmFallback.post(context, alarmId, intent.getStringExtra(EXTRA_FOLLOW_UP))
+        }
     }
 
     companion object {

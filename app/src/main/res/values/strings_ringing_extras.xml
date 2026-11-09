@@ -13,4 +13,6 @@
     <string name="morning_quest_no_streak">⏰ Alarm conquered (+XP)</string>
     <string name="morning_quest_window_hit">Completed between %1$d:00 and %2$d:00, so your morning streak keeps burning.</string>
     <string name="morning_quest_window_missed">Finished outside %1$d:00 to %2$d:00, so this wake-up earns XP but does not advance your morning streak.</string>
+    <string name="notification_fallback_channel_name">Alarms (backup)</string>
+    <string name="notification_fallback_channel_description">Used only if the system delays an alarm&#8217;s start, so it can still make noise and be opened.</string>
 </resources>
