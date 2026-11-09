@@ -38,9 +38,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.alarmboss.counselor.ChatMessage
 import com.example.alarmboss.counselor.MessageSender
+import com.example.alarmboss.counselor.CounselorReply
 import com.example.alarmboss.counselor.SleepCounselorEngine
 import androidx.compose.ui.res.stringResource
 import com.example.alarmboss.R
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -115,18 +117,31 @@ fun SleepCounselorScreen() {
     }
 
     fun sendMessage(text: String) {
-        val trimmed = text.trim()
+        val trimmed = text.trim().take(MAX_MESSAGE_LENGTH)
         if (trimmed.isBlank() || isLoading) return
         messages.add(ChatMessage(sender = MessageSender.USER, text = trimmed))
         inputText = ""
         isLoading = true
 
         scope.launch {
-            listState.animateScrollToItem(messages.size - 1)
-            val reply = engine.getCounselorResponse(messages.toList(), trimmed)
-            messages.add(ChatMessage(sender = MessageSender.COUNSELOR, text = reply))
-            isLoading = false
-            listState.animateScrollToItem(messages.size - 1)
+            // However this ends, the "reflecting" indicator must go away and the input must work again.
+            // Before, any failure left it spinning for good and every later message was ignored.
+            try {
+                runCatching { listState.animateScrollToItem(messages.size - 1) }
+                val reply = try {
+                    engine.getCounselorReply(messages.toList(), trimmed)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    CounselorReply(SleepCounselorEngine.fallbackCounselorEngine(trimmed), answeredOnDevice = true)
+                }
+                messages.add(
+                    ChatMessage(sender = MessageSender.COUNSELOR, text = reply.text, answeredOnDevice = reply.answeredOnDevice)
+                )
+            } finally {
+                isLoading = false
+            }
+            runCatching { listState.animateScrollToItem(messages.size - 1) }
         }
     }
 
@@ -317,12 +332,24 @@ private fun ChatBubble(message: ChatMessage) {
             border = if (!isUser) BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)) else null,
             modifier = Modifier.widthIn(max = 300.dp)
         ) {
-            Text(
-                text = message.text,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-            )
+            Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                Text(
+                    text = message.text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                )
+                if (message.answeredOnDevice) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.counselor_on_device_note),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }
+
+/** Longest message sent; a pasted essay would only slow the reply and cost tokens. */
+private const val MAX_MESSAGE_LENGTH = 500
