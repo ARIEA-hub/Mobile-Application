@@ -104,7 +104,7 @@ private fun AlarmEditForm(
         viewModel.save(
             Alarm(
                 id = base?.id ?: 0L,
-                hour = hour, minute = minute, label = label,
+                hour = hour, minute = minute, label = label.trim(),
                 isEnabled = base?.isEnabled ?: true,
                 repeatDays = if (specificDate != null) emptySet() else days,
                 specificDate = specificDate?.toString(),
@@ -251,7 +251,7 @@ private fun AlarmEditForm(
                 ) {
                     OutlinedTextField(
                         value = label,
-                        onValueChange = { label = it },
+                        onValueChange = { label = it.take(MAX_LABEL_LENGTH) },
                         label = { Text(stringResource(R.string.edit_label)) },
                         placeholder = { Text(stringResource(R.string.edit_label_hint)) },
                         shape = RoundedCornerShape(12.dp),
@@ -664,3 +664,6 @@ private fun StrictConfig(
         }
     }
 }
+
+/** A label is shown on cards and in notifications, where a very long one only gets cut off. */
+private const val MAX_LABEL_LENGTH = 60
