@@ -13,7 +13,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.alarmboss"
+        // Google Play does not accept the "com.example" prefix. The code keeps its original package (the
+        // namespace above); only the identity the store and the device see changes. It cannot be changed
+        // again once the app has been published.
+        applicationId = "io.github.arieahub.alarmboss"
         minSdk = 36
         targetSdk = 36
         versionCode = 10
