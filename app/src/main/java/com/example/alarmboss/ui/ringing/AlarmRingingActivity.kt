@@ -1,6 +1,7 @@
 package com.example.alarmboss.ui.ringing
 
 import android.animation.ValueAnimator
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.text.format.DateFormat
@@ -151,11 +152,18 @@ class AlarmRingingActivity : ComponentActivity() {
 
         val alarmId = intent.getLongExtra(AlarmReceiver.EXTRA_ALARM_ID, -1L)
         val isWakeCheck = intent.getStringExtra(AlarmReceiver.EXTRA_FOLLOW_UP) == FollowUp.WAKE_CHECK.name
-        viewModel.load(alarmId, isWakeCheck)
+        viewModel.offer(alarmId, isWakeCheck)
 
         setContent {
             AlarmBossTheme {
                 val session by viewModel.session.collectAsState()
+                val missing by viewModel.missing.collectAsState()
+                LaunchedEffect(missing) {
+                    if (missing) {
+                        AlarmService.stop(this@AlarmRingingActivity)
+                        finish()
+                    }
+                }
                 LaunchedEffect(session) {
                     if (session?.alarm?.dynamicBrightness == true) {
                         startDynamicBrightnessRamp()
@@ -249,9 +257,9 @@ class AlarmRingingActivity : ComponentActivity() {
                                 streakCount = viewModel.lastWakeResult?.currentStreak ?: session?.currentStreak ?: 1,
                                 onClaimBonus = { bonusXp ->
                                     viewModel.addQuestBonusXp(bonusXp)
-                                    finish()
+                                    finishRing()
                                 },
-                                onSkip = { finish() }
+                                onSkip = { finishRing() }
                             )
                         }
                     }
@@ -290,22 +298,51 @@ class AlarmRingingActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    private fun snoozeAlarm() {
-        viewModel.snooze()
+    /**
+     * The screen is a single instance, so a second alarm that rings while it is open arrives here
+     * rather than in a new screen. It waits for its turn; replacing the first would let its challenge
+     * be skipped by finishing the other one.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val alarmId = intent.getLongExtra(AlarmReceiver.EXTRA_ALARM_ID, -1L)
+        if (alarmId == -1L) return
+        viewModel.offer(alarmId, intent.getStringExtra(AlarmReceiver.EXTRA_FOLLOW_UP) == FollowUp.WAKE_CHECK.name)
+    }
+
+    /**
+     * Ends the ring that is on screen. If another alarm is waiting it takes over (and the sound keeps
+     * going for it); otherwise everything is silenced and the screen closes.
+     */
+    private fun finishRing() {
+        if (viewModel.advanceToNext()) {
+            showMorningQuest = false
+            askParentPinToStop = false
+            isAlarmActive = true
+            return
+        }
         AlarmService.stop(this)
         finish()
+    }
+
+    private fun snoozeAlarm() {
+        if (!viewModel.snooze()) return
+        finishRing()
     }
 
     private fun dismissAlarm(session: RingSession) {
         if (!viewModel.completeWakeUp()) return
         isAlarmActive = false
         batteryAlertJob?.cancel()
-        AlarmService.stop(this)
         // Passing the wake-up check is not a fresh wake-up, so it gets no briefing and no morning quest.
         if (session.isWakeCheck) {
-            finish()
+            finishRing()
             return
         }
+        // Silence now so the morning quest isn't shown over an alarm still ringing, unless another
+        // alarm is waiting and still needs the sound.
+        if (!viewModel.hasPending) AlarmService.stop(this)
         if (session.alarm.morningBriefing) {
             val time = formatTime(session.alarm.hour, session.alarm.minute, DateFormat.is24HourFormat(this))
             tts?.speak(
@@ -322,8 +359,7 @@ class AlarmRingingActivity : ComponentActivity() {
 
     private fun emergencyStop() {
         if (!viewModel.emergencyStop()) return
-        AlarmService.stop(this)
-        finish()
+        finishRing()
     }
 
     override fun onDestroy() {

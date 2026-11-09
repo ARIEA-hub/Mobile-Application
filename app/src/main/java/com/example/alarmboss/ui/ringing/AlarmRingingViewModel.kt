@@ -12,6 +12,8 @@ import com.example.alarmboss.data.StrictExerciseCategory
 import com.example.alarmboss.data.UserProfile
 import com.example.alarmboss.data.WakeEvent
 import com.example.alarmboss.engine.ProgressionEngine
+import com.example.alarmboss.engine.RingQueue
+import com.example.alarmboss.engine.RingRequest
 import com.example.alarmboss.engine.RingPlan
 import com.example.alarmboss.engine.RingPlanner
 import com.example.alarmboss.util.FollowUpSettings
@@ -46,24 +48,63 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
     // for the whole ring instead of shifting once the profile updates on dismiss.
     private var profileSnapshot: UserProfile? = null
 
-    private val ringStartedAt: Long = System.currentTimeMillis()
+    // Per-ring state. It is reset for every ring the screen shows, because one screen can deal with
+    // several alarms in a row (see RingQueue).
+    private var ringStartedAt: Long = System.currentTimeMillis()
     private var firstTouchAt: Long = 0L
     private var completed = false
     private var usedPuzzleAlternative = false
 
-    fun load(id: Long, isWakeCheck: Boolean = false) {
+    private val queue = RingQueue()
+
+    /** True when the alarm being shown no longer exists (deleted while ringing), so there is nothing to show. */
+    private val _missing = MutableStateFlow(false)
+    val missing: StateFlow<Boolean> = _missing
+
+    /** Whether another alarm is waiting for its turn after the one on screen. */
+    val hasPending: Boolean get() = queue.hasPending
+
+    /**
+     * Asks the screen to deal with an alarm. If nothing is showing it is loaded straight away; if
+     * another alarm is already on screen it waits its turn instead of replacing it, so that no
+     * alarm's challenge can be skipped by finishing a different one.
+     */
+    fun offer(alarmId: Long, isWakeCheck: Boolean) {
+        if (queue.offer(RingRequest(alarmId, isWakeCheck))) loadCurrent()
+    }
+
+    /** Moves on to the next waiting alarm. Returns false, with nothing left to show, if there is none. */
+    fun advanceToNext(): Boolean {
+        if (queue.advance() == null) return false
+        loadCurrent()
+        return true
+    }
+
+    private fun loadCurrent() {
+        val request = queue.current ?: return
+        ringStartedAt = System.currentTimeMillis()
+        firstTouchAt = 0L
+        completed = false
+        usedPuzzleAlternative = false
+        lastWakeResult = null
+        _session.value = null
         viewModelScope.launch {
             val profile = profileRepository.getProfile()
             // Streak including today, fixed now so a dismiss after midnight can't change the plan.
             val projectedStreak = streakManager.projectedStreak()
-            val alarm = repository.getAlarm(id) ?: return@launch
+            val alarm = repository.getAlarm(request.alarmId)
+            if (alarm == null) {
+                // Deleted while it was ringing. Skip to the next alarm, or report there is nothing left.
+                if (!advanceToNext()) _missing.value = true
+                return@launch
+            }
             profileSnapshot = profile
             _session.value = RingSession(
                 alarm = alarm,
                 plan = RingPlanner.plan(alarm.mode, profile.level, projectedStreak),
                 currentStreak = streakManager.getCurrentStreak(),
                 snoozeMinutes = snoozeSettings.minutes,
-                isWakeCheck = isWakeCheck
+                isWakeCheck = request.isWakeCheck
             )
         }
     }
@@ -167,9 +208,14 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
         return true
     }
 
-    /** Only offered in Easy mode: re-fires the alarm after the chosen snooze length, with a snooze XP penalty. */
-    fun snooze() {
-        val session = _session.value ?: return
+    /**
+     * Only offered in Easy mode: re-fires the alarm after the chosen snooze length, with a snooze XP penalty.
+     * Returns false if this ring was already finished, so a double tap cannot snooze (or charge) twice.
+     */
+    fun snooze(): Boolean {
+        val session = _session.value ?: return false
+        if (completed) return false
+        completed = true
         // The snooze is itself the next ring; a backup on top of it would ring twice.
         cancelBackup()
         AlarmScheduler(app).scheduleOneOffInMinutes(session.alarm, session.snoozeMinutes)
@@ -180,6 +226,7 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
             )
             profileRepository.updateProfile(penalizedProfile)
         }
+        return true
     }
 
     fun addQuestBonusXp(bonusXp: Int) {
