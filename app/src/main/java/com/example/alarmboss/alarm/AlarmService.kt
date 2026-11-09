@@ -51,17 +51,35 @@ class AlarmService : Service() {
     /** Alarms whose primary ring is under way; each may have queued a backup ring behind it. */
     private val primaryRings = mutableSetOf<Long>()
 
+    /** What is ringing, kept in storage so a ring survives the system killing this process. */
+    private val ringingStore by lazy { RingingStore(this) }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
                 // The ring was ended on purpose (dismissed, snoozed or stopped). Two alarms can share a
                 // minute but only one screen is shown, so clear the backup of every alarm that rang.
                 cancelPendingBackups()
+                ringingStore.clear()
                 stopRinging()
                 stopSelf()
                 return START_NOT_STICKY
             }
             else -> {
+                if (intent == null) {
+                    // The system restarted this service after killing the process mid-ring, which
+                    // leaves no intent to say what was ringing. Pick the rings back up from storage:
+                    // dropping them would let the alarm vanish before its challenge was ever solved.
+                    val resumed = ringingStore.resumable()
+                    if (resumed.isEmpty()) {
+                        stopSelf()
+                        return START_NOT_STICKY
+                    }
+                    resumed.forEach { entry ->
+                        startRinging(entry.alarmId, FollowUp.values().firstOrNull { it.name == entry.followUp })
+                    }
+                    return START_STICKY
+                }
                 val alarmId = intent?.getLongExtra(AlarmReceiver.EXTRA_ALARM_ID, -1L) ?: -1L
                 if (alarmId == -1L) {
                     stopSelf()
@@ -77,13 +95,17 @@ class AlarmService : Service() {
 
     private fun startRinging(alarmId: Long, followUp: FollowUp?) {
         val app = application as AlarmBossApp
+        // Written before anything else, so a kill at any later point can still be recovered from.
+        ringingStore.add(alarmId, followUp?.name)
         // startForegroundService() obliges us to call startForeground() within seconds or the system
-        // kills the app, so promote before the database lookup, and even if the alarm is gone.
-        startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.ringing_default_label), null))
+        // kills the app, so promote before the database lookup, and even if the alarm is gone. When the
+        // system restarts the service on its own it may refuse; the alarm must still ring then.
+        runCatching { startForeground(NOTIFICATION_ID, buildNotification(getString(R.string.ringing_default_label), null)) }
         scope.launch {
             val alarm = app.repository.getAlarm(alarmId)
             if (alarm == null) {
                 // Deleted between scheduling and ringing: nothing to ring for.
+                ringingStore.remove(alarmId, followUp?.name)
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 return@launch
@@ -127,7 +149,7 @@ class AlarmService : Service() {
             else alarm.label.ifBlank { getString(R.string.ringing_default_label) }
             val notification = buildNotification(title, fullScreenPendingIntent)
 
-            startForeground(NOTIFICATION_ID, notification)
+            runCatching { startForeground(NOTIFICATION_ID, notification) }
             startActivity(fullScreenIntent)
 
             val accessibility = AccessibilitySettings(this@AlarmService)

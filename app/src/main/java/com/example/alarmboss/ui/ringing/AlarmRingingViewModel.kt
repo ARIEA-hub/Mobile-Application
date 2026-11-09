@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.alarmboss.AlarmBossApp
 import com.example.alarmboss.alarm.AlarmScheduler
 import com.example.alarmboss.alarm.FollowUp
+import com.example.alarmboss.alarm.RingingStore
 import com.example.alarmboss.data.Alarm
 import com.example.alarmboss.data.AlarmMode
 import com.example.alarmboss.data.StrictExerciseCategory
@@ -133,6 +134,7 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
         if (completed) return false
         completed = true
         cancelBackup()
+        recordFinished()
 
         // Passing the wake-up check proves the user is still up, but it isn't a wake-up: no streak, no
         // XP, no event, and it must not queue another check behind itself.
@@ -205,6 +207,7 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
         if (completed) return false
         completed = true
         cancelBackup()
+        recordFinished()
         return true
     }
 
@@ -218,6 +221,7 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
         completed = true
         // The snooze is itself the next ring; a backup on top of it would ring twice.
         cancelBackup()
+        recordFinished()
         AlarmScheduler(app).scheduleOneOffInMinutes(session.alarm, session.snoozeMinutes)
         app.appScope.launch {
             val currentProfile = profileRepository.getProfile()
@@ -240,6 +244,15 @@ class AlarmRingingViewModel(application: Application) : AndroidViewModel(applica
             )
             profileRepository.updateProfile(updated)
         }
+    }
+
+    /**
+     * This ring is over, so it must not be resumed if the process is killed before the next one ends.
+     * (When it is the last ring the service clears the whole record itself.)
+     */
+    private fun recordFinished() {
+        val session = _session.value ?: return
+        RingingStore(app).remove(session.alarm.id, if (session.isWakeCheck) FollowUp.WAKE_CHECK.name else null)
     }
 
     /** The ring is being ended on purpose, so the safety-net ring behind it is no longer needed. */
