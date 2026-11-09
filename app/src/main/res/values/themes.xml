@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.AlarmBoss" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        The window behind the first frame. The system launch screen shows the app icon on this colour, the same deep purple as the
+        icon's background, so the logo appears the instant the app opens with no artificial delay.
+    -->
+    <style name="Theme.AlarmBoss" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/launch_background</item>
+    </style>
 </resources>
