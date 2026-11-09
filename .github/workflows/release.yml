@@ -38,12 +38,27 @@ jobs:
           echo "No KEYSTORE_BASE64 secret: the APK will be signed with the debug key."
         fi
 
-    - name: Build Release APK
+    - name: Build release APK and Play Store bundle
       env:
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      run: ./gradlew assembleRelease
+      run: ./gradlew assembleRelease bundleRelease
+
+    # Google Play takes an app bundle signed with the upload key and rejects one signed with a debug
+    # key, so the bundle is only kept when the real key was available.
+    - name: Keep the Play Store bundle (signed builds only)
+      if: env.KEYSTORE_FILE != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: alarmboss-play-bundle
+        path: app/build/outputs/bundle/release/app-release.aab
+        if-no-files-found: error
+        retention-days: 30
+
+    - name: Note that no Play Store bundle was kept
+      if: env.KEYSTORE_FILE == ''
+      run: echo "::warning::No signing key configured, so no Play Store bundle was kept. Add the KEYSTORE_* secrets to produce one."
 
     - name: Find and Print APK Path
       run: |
