@@ -42,7 +42,7 @@
     <string name="exact_alarm_enable">Enable in Settings</string>
     <string name="battery_title">Battery optimization is on</string>
     <string name="battery_body">Some phones stop background apps to save power, which can make an alarm ring late or not at all. Let AlarmBoss run unrestricted so it wakes you on time.</string>
-    <string name="battery_allow">Allow</string>
+    <string name="battery_allow">Open battery settings</string>
     <string name="battery_not_now">Not now</string>
 
     <!-- Alarm editor -->

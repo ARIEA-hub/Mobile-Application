@@ -1,9 +1,7 @@
 package com.example.alarmboss.ui.alarms
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
@@ -38,9 +36,9 @@ private const val KEY_BATTERY_DISMISSED = "battery_banner_dismissed"
 
 /**
  * Many phone makers aggressively stop background apps to save power, which can delay or silently
- * drop an alarm. Offers the system's "don't optimize" exemption, and can be dismissed for good
- * since some users deliberately keep optimization on. Rechecked on resume because the grant
- * happens in a system dialog.
+ * drop an alarm. Points to the system's "don't optimize" list, and can be dismissed for good
+ * since some users deliberately keep optimization on. Rechecked on resume because the change
+ * happens in system settings.
  */
 @Composable
 fun BatteryOptimizationBanner() {
@@ -82,7 +80,7 @@ fun BatteryOptimizationBanner() {
             )
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { requestExemption(context) }) { Text(stringResource(R.string.battery_allow)) }
+                TextButton(onClick = { openBatterySettings(context) }) { Text(stringResource(R.string.battery_allow)) }
                 TextButton(onClick = {
                     prefs.edit().putBoolean(KEY_BATTERY_DISMISSED, true).apply()
                     dismissed = true
@@ -92,15 +90,11 @@ fun BatteryOptimizationBanner() {
     }
 }
 
-private fun requestExemption(context: Context) {
-    val direct = Intent(
-        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-        Uri.parse("package:${context.packageName}")
-    )
-    try {
-        context.startActivity(direct)
-    } catch (_: ActivityNotFoundException) {
-        // Some OEM builds lack the direct dialog; the general list screen still lets the user opt out.
-        runCatching { context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
-    }
+/**
+ * Opens the system's battery-optimization list, where the user can exempt the app. The direct "ignore
+ * battery optimizations" request is deliberately not used: it needs a permission that Google Play
+ * restricts, and alarms set as alarm clocks fire on time without it. This screen needs no permission.
+ */
+private fun openBatterySettings(context: Context) {
+    runCatching { context.startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
 }
