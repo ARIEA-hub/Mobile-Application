@@ -35,7 +35,7 @@ object AlarmFallback {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         val notification = NotificationCompat.Builder(context, AlarmBossApp.CHANNEL_ALARM_FALLBACK)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(context.getString(R.string.ringing_default_label))
             .setContentText(context.getString(R.string.notification_tap_to_open))
             .setPriority(NotificationCompat.PRIORITY_MAX)

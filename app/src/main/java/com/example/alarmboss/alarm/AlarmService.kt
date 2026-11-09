@@ -163,7 +163,7 @@ class AlarmService : Service() {
 
     private fun buildNotification(title: String, fullScreen: PendingIntent?): Notification =
         NotificationCompat.Builder(this, AlarmBossApp.CHANNEL_ALARM)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(getString(R.string.notification_tap_to_open))
             .setPriority(NotificationCompat.PRIORITY_MAX)
