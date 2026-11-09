@@ -36,6 +36,7 @@ Every alarm you actually wake up to earns XP, so mornings become a game you can 
 
 - **Emergency exits.** A locked alarm can still be switched off with a long press followed by a held button, and a ringing challenge has a deliberately slow Emergency stop, so the lock and the challenges can never trap someone who is ill or has made a mistake.
 - **Wake-up check.** After a Medium or Strict alarm is completed, it rings again after 5, 10 or 15 minutes (your choice in Settings) with a quick challenge, because the commonest failure is passing the task and going back to sleep. It is always on for Medium and Strict alarms, can be switched on for an Easy alarm individually, and can be applied to every non-Easy alarm in Settings.
+- **Alarms are never dropped.** If two alarms ring at once, each gets its own challenge in turn, so a Strict alarm can't be skipped by finishing an easier one. If Android kills the app mid-ring, the ring is resumed rather than lost. If the system is too slow to let an alarm start its service, a full-screen notification that rings and vibrates on its own takes over, and opening it starts the alarm normally.
 - **Backup alarm (optional).** If an alarm isn't completed, it rings again after 5, 10 or 15 minutes. Completing, snoozing or stopping the alarm cancels the backup.
 
 ## 🎨 Appearance
