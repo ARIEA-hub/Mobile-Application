@@ -34,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.alarmboss.counselor.ChatMessage
@@ -87,6 +89,7 @@ fun SleepCounselorScreen() {
         if (granted && speechRecognizer != null) {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             }
@@ -136,7 +139,12 @@ fun SleepCounselorScreen() {
                     CounselorReply(SleepCounselorEngine.fallbackCounselorEngine(trimmed), answeredOnDevice = true)
                 }
                 messages.add(
-                    ChatMessage(sender = MessageSender.COUNSELOR, text = reply.text, answeredOnDevice = reply.answeredOnDevice)
+                    ChatMessage(
+                        sender = MessageSender.COUNSELOR,
+                        text = reply.text,
+                        answeredOnDevice = reply.answeredOnDevice,
+                        fromAi = reply.fromAi
+                    )
                 )
             } finally {
                 isLoading = false
@@ -238,6 +246,14 @@ fun SleepCounselorScreen() {
                 }
             }
 
+            Text(
+                stringResource(R.string.counselor_disclaimer),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+
             // Input Row with Voice Dictation
             Surface(
                 tonalElevation = 4.dp,
@@ -338,6 +354,24 @@ private fun ChatBubble(message: ChatMessage) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )
+                if (message.fromAi) {
+                    // Google Play requires a way to report offensive or harmful AI-generated content.
+                    val context = LocalContext.current
+                    val issueUrl = stringResource(R.string.report_issue_url)
+                    val reportTitle = stringResource(R.string.counselor_report_title)
+                    TextButton(
+                        onClick = {
+                            val uri = android.net.Uri.parse(issueUrl).buildUpon()
+                                .appendQueryParameter("title", reportTitle)
+                                .appendQueryParameter("body", message.text)
+                                .build()
+                            runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+                        },
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(stringResource(R.string.counselor_report), style = MaterialTheme.typography.labelSmall)
+                    }
+                }
                 if (message.answeredOnDevice) {
                     Spacer(Modifier.height(4.dp))
                     Text(

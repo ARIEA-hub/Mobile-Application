@@ -159,6 +159,13 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (parentManager.isParentModeActive()) {
+                        Text(
+                            stringResource(R.string.settings_counselor_parent_note),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                     if (hasCounselorKey) {
                         Text(
                             stringResource(R.string.settings_counselor_key_saved),
@@ -219,6 +226,14 @@ fun SettingsScreen(
                             Text(stringResource(R.string.settings_privacy_online), style = MaterialTheme.typography.bodySmall)
                         }
                     }
+                    val policyUrl = stringResource(R.string.privacy_policy_url)
+                    TextButton(
+                        onClick = {
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(policyUrl)))
+                            }
+                        }
+                    ) { Text(stringResource(R.string.settings_privacy_policy_link), fontWeight = FontWeight.Bold) }
                 }
             }
 
@@ -439,7 +454,7 @@ fun SettingsScreen(
 
                         OutlinedButton(
                             onClick = viewModel::generatePassagesWithGemini,
-                            enabled = !isGeneratingPassages && hasCounselorKey,
+                            enabled = !isGeneratingPassages && hasCounselorKey && !parentManager.isParentModeActive(),
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             if (isGeneratingPassages) {

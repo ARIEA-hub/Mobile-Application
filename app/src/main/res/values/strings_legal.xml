@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Public pages: the policy Google Play requires, and where a harmful AI answer can be reported. -->
+    <string name="privacy_policy_url" translatable="false">https://github.com/ARIEA-hub/Mobile-Application/blob/main/PRIVACY.md</string>
+    <string name="report_issue_url" translatable="false">https://github.com/ARIEA-hub/Mobile-Application/issues/new</string>
+
+    <string name="settings_privacy_policy_link">Read the full privacy policy</string>
+    <string name="settings_counselor_parent_note">Online answers are turned off while Parent Mode is on. The counselor answers on this device only.</string>
+    <string name="counselor_disclaimer">General wellness information, not medical advice. For health concerns, please see a doctor.</string>
+    <string name="counselor_report">Report this answer</string>
+    <string name="counselor_report_title">Reported counselor answer</string>
+</resources>

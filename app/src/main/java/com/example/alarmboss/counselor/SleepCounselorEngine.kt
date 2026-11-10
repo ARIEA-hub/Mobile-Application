@@ -3,6 +3,7 @@ package com.example.alarmboss.counselor
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import com.example.alarmboss.data.ParentModeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -12,13 +13,15 @@ data class ChatMessage(
     val text: String,
     val timestamp: Long = System.currentTimeMillis(),
     /** True when the online service was wanted but could not be used, so the reply came from the device. */
-    val answeredOnDevice: Boolean = false
+    val answeredOnDevice: Boolean = false,
+    /** True when the reply was written by the online AI, which is what a user may need to report. */
+    val fromAi: Boolean = false
 )
 
 enum class MessageSender { USER, COUNSELOR }
 
 /** A reply, and how it was produced. */
-data class CounselorReply(val text: String, val answeredOnDevice: Boolean)
+data class CounselorReply(val text: String, val answeredOnDevice: Boolean, val fromAi: Boolean = false)
 
 class SleepCounselorEngine(context: Context) {
     private val appContext = context.applicationContext
@@ -80,6 +83,9 @@ CORE MISSION & ETHOS:
         prefs.edit().remove(PREFS_KEY_STORAGE).apply()
     }
 
+    /** Parent Mode is for children, so it switches every online feature off. */
+    fun isParentModeOn(): Boolean = runCatching { ParentModeManager(appContext).isParentModeActive() }.getOrDefault(false)
+
     private fun isOnline(): Boolean = runCatching {
         val manager = appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val capabilities = manager.getNetworkCapabilities(manager.activeNetwork) ?: return false
@@ -95,7 +101,9 @@ CORE MISSION & ETHOS:
         withContext(Dispatchers.IO) {
             val local = fallbackCounselorEngine(userMessage)
             val apiKey = getApiKey()
-            if (apiKey.isBlank()) return@withContext CounselorReply(local, answeredOnDevice = false)
+            // With Parent Mode on, a child's messages are never sent to an online service, whatever the
+            // key setting: they are answered on the device only.
+            if (apiKey.isBlank() || isParentModeOn()) return@withContext CounselorReply(local, answeredOnDevice = false)
             // No connection: don't wait for a timeout to find out.
             if (!isOnline()) return@withContext CounselorReply(local, answeredOnDevice = true)
             try {
@@ -104,7 +112,7 @@ CORE MISSION & ETHOS:
                     turns = GeminiTurns.build(history, userMessage),
                     maxTokens = 600
                 )
-                CounselorReply(text.replaceFirstChar { it.lowercase() }, answeredOnDevice = false)
+                CounselorReply(text.replaceFirstChar { it.lowercase() }, answeredOnDevice = false, fromAi = true)
             } catch (e: Exception) {
                 // A wrong key, a quota limit, a dropped connection: whatever it was, the user still gets an answer.
                 CounselorReply(local, answeredOnDevice = true)
@@ -118,6 +126,7 @@ CORE MISSION & ETHOS:
     suspend fun generateReadingPassages(): String = withContext(Dispatchers.IO) {
         val apiKey = getApiKey()
         check(apiKey.isNotBlank()) { "No API key" }
+        check(!isParentModeOn()) { "Online features are off while Parent Mode is on" }
         val prompt = "Write 2 distinct, inspiring morning wake-up paragraphs (about 35-40 words each) to boost cognitive alertness upon waking up. Separate them with a line containing only '---'. Do not use bullet points or numbering."
         GeminiClient(apiKey).generate(
             systemPrompt = null,
