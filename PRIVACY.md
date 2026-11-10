@@ -97,4 +97,5 @@ AlarmBoss is open source. You can read exactly what it does at
 ## Changes and contact
 
 If this policy changes, the new version will be published at the same address with a new date. For questions
-or requests, please open an issue at <https://github.com/ARIEA-hub/Mobile-Application/issues>.
+or requests, email <amsampat1@gmail.com> or open an issue at
+<https://github.com/ARIEA-hub/Mobile-Application/issues>.

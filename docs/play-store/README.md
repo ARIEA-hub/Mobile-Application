@@ -23,7 +23,7 @@ Everything below is prepared from what the app actually does. Start with `releas
 
 1. Create the Play developer account and verify identity
 2. Generate the upload keystore and add the four GitHub secrets
-3. Add a support email to the listing
+3. ~~Support email~~ (added: amsampat1@gmail.com)
 4. Run a closed test (12 testers, 14 days) for new personal accounts
 5. Fill the Play Console forms from these files
 6. Decide whether Android 16 only (`minSdk 36`) is acceptable

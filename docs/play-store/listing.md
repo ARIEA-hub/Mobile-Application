@@ -72,7 +72,7 @@ First release on Google Play: wake-up challenges, XP and streaks, wake-up check,
 
 ## Contact details (required, must be real)
 
-- **Email:** *(your public support email: not in the repo)*
+- **Email:** amsampat1@gmail.com
 - **Website:** https://github.com/ARIEA-hub/Mobile-Application
 - **Privacy policy URL:** https://github.com/ARIEA-hub/Mobile-Application/blob/main/PRIVACY.md
 

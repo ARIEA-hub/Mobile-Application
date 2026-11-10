@@ -67,4 +67,5 @@ opted in for 14 continuous days** before production access is granted. Plan for 
   device testing; see the project notes before changing it.
 - **Signing.** A release built without the secrets is signed with a debug key and **cannot** be uploaded to
   Google Play.
-- **Support email.** The listing needs a real contact email; this repository deliberately does not contain one.
+- **Support email.** `amsampat1@gmail.com` is the contact on the listing and in `PRIVACY.md`. It is shown
+  publicly on the Play page; use a dedicated address instead if you prefer.
