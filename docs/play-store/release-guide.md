@@ -62,9 +62,9 @@ opted in for 14 continuous days** before production access is granted. Plan for 
 
 ## Known limits to be aware of
 
-- **Android 16 only.** `minSdk` is 36, so the app installs only on phones running Android 16 or newer. This
-  keeps the code simple but limits the audience. Supporting older versions needs a compatibility pass and
-  device testing; see the project notes before changing it.
+- **Android 8 and newer.** `minSdk` is 26 (see `devices.md`). Version-specific system calls go through
+  `PlatformCompat.kt`; lint (`NewApi`) is clean for API 26+. Only an Android 16-class emulator was available
+  for the runtime check, so run the pre-launch report and the closed test on older phones before production.
 - **Signing.** A release built without the secrets is signed with a debug key and **cannot** be uploaded to
   Google Play.
 - **Support email.** `amsampat1@gmail.com` is the contact on the listing and in `PRIVACY.md`. It is shown

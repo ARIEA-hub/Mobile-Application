@@ -26,4 +26,4 @@ Everything below is prepared from what the app actually does. Start with `releas
 3. ~~Support email~~ (added: amsampat1@gmail.com)
 4. Run a closed test (12 testers, 14 days) for new personal accounts
 5. Fill the Play Console forms from these files
-6. Decide whether Android 16 only (`minSdk 36`) is acceptable
+6. Optional: test on older real phones (see `devices.md`); the closed test is the best chance

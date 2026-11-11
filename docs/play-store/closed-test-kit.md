@@ -23,7 +23,7 @@ for you; this kit makes it quick.
 > 2. Open this link on your Android phone and tap **Become a tester**: <OPT-IN LINK>
 > 3. Install the app from the Play Store link on that page, and **keep it installed for 14 days**.
 >
-> The app needs **Android 16 or newer**. Please set a real alarm once or twice and tell me if anything
+> The app needs **Android 8 or newer** (most phones from 2018 onward). Please set a real alarm once or twice and tell me if anything
 > breaks: amsampat1@gmail.com. Thank you!
 
 ## What testers should try

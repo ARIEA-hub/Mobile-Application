@@ -1,17 +1,18 @@
 # Permission and policy declarations (Play Console → Policy and programs → App content)
 
-Application ID: `io.github.arieahub.alarmboss` · Target SDK 36 · Min SDK 36
+Application ID: `io.github.arieahub.alarmboss` · Target SDK 36 · Min SDK 26 (Android 8)
 
 Every sensitive permission the app declares, why, and what to answer. Paste the text in quotes.
 
-## 1. Exact alarms (`USE_EXACT_ALARM`)
+## 1. Exact alarms (`USE_EXACT_ALARM`, plus `SCHEDULE_EXACT_ALARM` on Android 12 and 12L only)
 
 Google restricts this to apps whose **core function** is an alarm clock or calendar.
 
 - **Declare:** "Alarm clock".
 - **Justification:** "AlarmBoss is an alarm clock. Its core function is ringing at the exact time the user
   sets, which is why it uses USE_EXACT_ALARM with AlarmManager.setAlarmClock. An inexact alarm would
-  defeat the purpose of the app."
+  defeat the purpose of the app. On Android 12 and 12L, which predate USE_EXACT_ALARM, the app declares
+  SCHEDULE_EXACT_ALARM (maxSdkVersion 32) for the same reason."
 
 ## 2. Full-screen intent (`USE_FULL_SCREEN_INTENT`)
 
@@ -53,7 +54,6 @@ The ringing service (`AlarmService`) uses the **mediaPlayback** foreground servi
 
 - `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`: restricted on Google Play. The app opens the system settings list
   instead, which needs no permission.
-- `SCHEDULE_EXACT_ALARM`: redundant with `USE_EXACT_ALARM`.
 - `SYSTEM_ALERT_WINDOW`, device-admin: not used.
 
 ## 8. Other declarations
