@@ -41,6 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import com.example.alarmboss.PlatformCompat
 import com.example.alarmboss.R
 import com.example.alarmboss.data.Alarm
 import com.example.alarmboss.data.AlarmMode
@@ -371,13 +372,13 @@ private fun ExactAlarmPermissionBanner() {
     val context = LocalContext.current
     val alarmManager = remember { context.getSystemService(Context.ALARM_SERVICE) as AlarmManager }
 
-    var canScheduleExact by remember { mutableStateOf(alarmManager.canScheduleExactAlarms()) }
+    var canScheduleExact by remember { mutableStateOf(PlatformCompat.canScheduleExactAlarms(alarmManager)) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                canScheduleExact = alarmManager.canScheduleExactAlarms()
+                canScheduleExact = PlatformCompat.canScheduleExactAlarms(alarmManager)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

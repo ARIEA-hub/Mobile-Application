@@ -86,7 +86,8 @@ private fun RequestRuntimePermissions() {
     // the alarm's full-screen notification can post at all.
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
     LaunchedEffect(Unit) {
-        launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        // The permission only exists from Android 13; earlier versions allow notifications by default.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 }
 

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.alarmboss.PlatformCompat
 import com.example.alarmboss.R
 
 /**
@@ -45,14 +46,14 @@ fun NotificationAccessBanner() {
     val manager = remember { context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
 
     var notificationsOn by remember { mutableStateOf(manager.areNotificationsEnabled()) }
-    var fullScreenOn by remember { mutableStateOf(manager.canUseFullScreenIntent()) }
+    var fullScreenOn by remember { mutableStateOf(PlatformCompat.canUseFullScreenIntent(manager)) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 notificationsOn = manager.areNotificationsEnabled()
-                fullScreenOn = manager.canUseFullScreenIntent()
+                fullScreenOn = PlatformCompat.canUseFullScreenIntent(manager)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

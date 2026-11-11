@@ -15,9 +15,9 @@ import android.os.IBinder
 import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.example.alarmboss.AlarmBossApp
+import com.example.alarmboss.PlatformCompat
 import com.example.alarmboss.R
 import com.example.alarmboss.engine.AlarmFeedbackPlanner
 import com.example.alarmboss.engine.AlarmTimeCalculator
@@ -266,7 +266,7 @@ class AlarmService : Service() {
     }
 
     private fun startVibration() {
-        vibrator = (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+        vibrator = PlatformCompat.vibrator(this)
         val pattern = longArrayOf(0, 800, 400)
         vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
     }

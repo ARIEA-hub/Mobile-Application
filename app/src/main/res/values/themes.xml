@@ -2,10 +2,10 @@
 <resources>
 
     <!--
-        The window behind the first frame. The system launch screen shows the app icon on this colour, the same deep purple as the
-        icon's background, so the logo appears the instant the app opens with no artificial delay.
+        The window behind the first frame: the icon's deep purple, so the app opens without a white flash. Android 12+ also
+        shows the app icon on this colour (see values-v31); older versions just show the colour until the first frame.
     -->
     <style name="Theme.AlarmBoss" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowSplashScreenBackground">@color/launch_background</item>
+        <item name="android:windowBackground">@color/launch_background</item>
     </style>
 </resources>

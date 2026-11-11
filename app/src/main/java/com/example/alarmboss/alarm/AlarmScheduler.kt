@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import com.example.alarmboss.PlatformCompat
 import com.example.alarmboss.data.Alarm
 import com.example.alarmboss.data.specificLocalDate
 import com.example.alarmboss.engine.AlarmTimeCalculator
@@ -55,7 +56,7 @@ class AlarmScheduler(private val context: Context) {
      * inexact alarm (late, but it rings) instead of crashing and leaving nothing scheduled.
      */
     private fun setAlarm(triggerAtMillis: Long, pendingIntent: PendingIntent, showInSystemClock: Boolean) {
-        if (alarmManager.canScheduleExactAlarms()) {
+        if (PlatformCompat.canScheduleExactAlarms(alarmManager)) {
             try {
                 if (showInSystemClock) {
                     alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent), pendingIntent)

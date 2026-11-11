@@ -17,7 +17,7 @@ android {
         // namespace above); only the identity the store and the device see changes. It cannot be changed
         // again once the app has been published.
         applicationId = "io.github.arieahub.alarmboss"
-        minSdk = 36
+        minSdk = 26
         targetSdk = 36
         versionCode = 10
         versionName = "1.7.2"
